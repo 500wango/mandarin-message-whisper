@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import CategoryManager from '@/components/CategoryManager';
+import SiteSettings from '@/pages/SiteSettings';
 import { 
   Plus, 
   FileText, 
@@ -26,7 +27,8 @@ import {
   UserCheck,
   Image,
   Globe,
-  Tag
+  Tag,
+  Settings
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -370,7 +372,7 @@ const Dashboard = () => {
         )}
 
         <Tabs defaultValue="articles" className="space-y-6">
-          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-1'}`}>
+          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-1'}`}>
             <TabsTrigger value="articles" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               文章管理
@@ -392,6 +394,10 @@ const Dashboard = () => {
                 <TabsTrigger value="pages" className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   页面管理
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  网站设置
                 </TabsTrigger>
               </>
             )}
@@ -762,6 +768,10 @@ const Dashboard = () => {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="settings" className="space-y-6">
+                <SiteSettings />
               </TabsContent>
             </>
           )}

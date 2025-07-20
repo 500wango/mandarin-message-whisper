@@ -22,7 +22,8 @@ import {
   Shield,
   AlertCircle,
   Mail,
-  UserCheck
+  UserCheck,
+  Image
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -303,10 +304,16 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               {profile?.role === 'admin' && (
-                <Button onClick={() => navigate('/dashboard/editor')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  新建文章
-                </Button>
+                <>
+                  <Button variant="outline" onClick={() => navigate('/dashboard/media')}>
+                    <Image className="mr-2 h-4 w-4" />
+                    媒体管理
+                  </Button>
+                  <Button onClick={() => navigate('/dashboard/editor')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    新建文章
+                  </Button>
+                </>
               )}
               <Button variant="outline" onClick={handleSignOut}>
                 退出登录

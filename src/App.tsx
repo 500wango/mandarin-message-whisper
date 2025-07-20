@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import ArticleEditor from "./pages/ArticleEditor";
 import Article from "./pages/Article";
 import Prompts from "./pages/Prompts";
+import MediaManager from "./pages/MediaManager";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/editor" element={<ArticleEditor />} />
             <Route path="/dashboard/editor/:id" element={<ArticleEditor />} />
+            <Route path="/dashboard/media" element={<MediaManager />} />
             <Route path="/article/:slug" element={<Article />} />
             <Route path="/prompts" element={<Prompts />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

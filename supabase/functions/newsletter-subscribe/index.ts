@@ -157,7 +157,7 @@ const createWelcomeEmailTemplate = (email: string) => {
 const sendWelcomeEmail = async (email: string) => {
   try {
     const emailResponse = await resend.emails.send({
-      from: 'AI Navigator <noreply@resend.dev>',
+      from: 'AI Navigator <onboarding@resend.dev>',
       to: [email],
       subject: '🎉 欢迎加入AI Navigator社区！',
       html: createWelcomeEmailTemplate(email),

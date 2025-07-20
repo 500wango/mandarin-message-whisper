@@ -30,6 +30,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 interface Article {
   id: string;
@@ -279,7 +281,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      <Header />
+      
+      <div className="py-8">
       <header className="border-b border-border/40 bg-card/50 backdrop-blur">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -637,6 +641,8 @@ const Dashboard = () => {
           )}
         </Tabs>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };

@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +71,9 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="flex items-center justify-center p-4 py-16">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
@@ -204,6 +208,8 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };

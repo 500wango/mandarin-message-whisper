@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Brain, Menu, X, Zap, Sparkles } from 'lucide-react';
+import { Brain, Menu, X, Zap, Sparkles, User, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   const navigation = [
     { name: '首页', href: '/', icon: Brain },
@@ -51,11 +53,33 @@ export const Header = () => {
           })}
         </nav>
 
-        {/* CTA Button */}
+        {/* Auth Section */}
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary hover:shadow-neon transition-all duration-300">
-            订阅更新
-          </Button>
+          {user ? (
+            <>
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary hover:shadow-neon transition-all duration-300">
+                  <User className="mr-2 h-4 w-4" />
+                  管理面板
+                </Button>
+              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => signOut()}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                退出
+              </Button>
+            </>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary hover:shadow-neon transition-all duration-300">
+                <LogIn className="mr-2 h-4 w-4" />
+                登录
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -91,10 +115,35 @@ export const Header = () => {
                 </Link>
               );
             })}
-            <div className="pt-4 pb-2">
-              <Button variant="outline" size="sm" className="w-full border-primary/20 hover:border-primary">
-                订阅更新
-              </Button>
+            <div className="pt-4 pb-2 space-y-2">
+              {user ? (
+                <>
+                  <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="outline" size="sm" className="w-full border-primary/20 hover:border-primary">
+                      <User className="mr-2 h-4 w-4" />
+                      管理面板
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      signOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    退出登录
+                  </Button>
+                </>
+              ) : (
+                <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full border-primary/20 hover:border-primary">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    登录
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

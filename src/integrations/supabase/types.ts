@@ -681,6 +681,54 @@ export type Database = {
         }
         Relationships: []
       }
+      media: {
+        Row: {
+          created_at: string
+          duration: number | null
+          file_name: string
+          file_path: string
+          file_size: number
+          height: number | null
+          id: string
+          mime_type: string
+          name: string
+          type: string
+          updated_at: string
+          uploaded_by: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration?: number | null
+          file_name: string
+          file_path: string
+          file_size: number
+          height?: number | null
+          id?: string
+          mime_type: string
+          name: string
+          type: string
+          updated_at?: string
+          uploaded_by: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration?: number | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          height?: number | null
+          id?: string
+          mime_type?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          uploaded_by?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
       migrations: {
         Row: {
           id: number

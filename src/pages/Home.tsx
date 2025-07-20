@@ -101,6 +101,7 @@ const Home = () => {
       // 获取每个分类下的最新文章
       const categoriesWithArticles = await Promise.all(
         categories.map(async (category) => {
+          console.log(`Fetching articles for category: ${category.name} (${category.id})`);
           const { data: articles, error: articlesError } = await supabase
             .from('articles')
             .select('*')
@@ -113,6 +114,8 @@ const Home = () => {
             console.error(`Error fetching articles for category ${category.name}:`, articlesError);
             return null;
           }
+
+          console.log(`Found ${articles?.length || 0} articles for category ${category.name}`);
 
           if (!articles || articles.length === 0) {
             return null;

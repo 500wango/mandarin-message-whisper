@@ -62,16 +62,24 @@ export const Header = () => {
     try {
       const { data, error } = await supabase
         .from('site_settings')
-        .select('setting_value')
-        .eq('setting_key', 'site_title')
-        .single();
+        .select('setting_key, setting_value')
+        .in('setting_key', ['site_title', 'site_logo_url']);
 
       if (error) throw error;
-      if (data) setSiteTitle(data.setting_value);
+      
+      const settingsMap = data?.reduce((acc: Record<string, string>, item) => {
+        acc[item.setting_key] = item.setting_value;
+        return acc;
+      }, {});
+
+      if (settingsMap?.site_title) setSiteTitle(settingsMap.site_title);
+      if (settingsMap?.site_logo_url) setSiteLogoUrl(settingsMap.site_logo_url);
     } catch (error) {
       console.error('Error fetching site settings:', error);
     }
   };
+
+  const [siteLogoUrl, setSiteLogoUrl] = useState('');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -81,7 +89,15 @@ export const Header = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2 group">
           <div className="relative">
-            <Brain className="h-8 w-8 text-primary group-hover:animate-glow-pulse transition-all duration-300" />
+            {siteLogoUrl ? (
+              <img 
+                src={siteLogoUrl} 
+                alt="Logo" 
+                className="h-8 w-8 object-contain group-hover:scale-110 transition-all duration-300"
+              />
+            ) : (
+              <Brain className="h-8 w-8 text-primary group-hover:animate-glow-pulse transition-all duration-300" />
+            )}
             <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
           <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">

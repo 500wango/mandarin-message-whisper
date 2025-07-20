@@ -9,6 +9,7 @@ import News from "./pages/News";
 import Tools from "./pages/Tools";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import ArticleEditor from "./pages/ArticleEditor";
 import Prompts from "./pages/Prompts";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,8 @@ const App = () => (
             <Route path="/tools" element={<Tools />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/editor" element={<ArticleEditor />} />
+            <Route path="/dashboard/editor/:id" element={<ArticleEditor />} />
             <Route path="/prompts" element={<Prompts />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

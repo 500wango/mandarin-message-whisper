@@ -2,3 +2,6 @@ project_id = "dembuvipwnfolksvqygl"
 
 [functions.newsletter-subscribe]
 verify_jwt = false
+
+[functions.article-api]
+verify_jwt = false

@@ -1,102 +1,78 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Users, Shield, AlertTriangle, Scale, Gavel, Mail, Clock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Terms = () => {
-  const sections = [
+  const [pageContent, setPageContent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPageContent();
+  }, []);
+
+  const fetchPageContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('page_content')
+        .select('*')
+        .eq('page_key', 'terms')
+        .eq('is_published', true)
+        .single();
+
+      if (error) {
+        console.error('Error fetching page content:', error);
+        return;
+      }
+
+      setPageContent(data);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-8">
+          <div className="container py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground mt-4">加载中...</p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // 默认内容，如果数据库没有内容则使用
+  const defaultSections = [
     {
       id: "acceptance",
       title: "接受条款",
       icon: FileText,
       content: [
         "访问和使用本网站即表示您同意遵守本使用条款。",
-        "如果您不同意这些条款，请不要使用本网站。",
-        "我们有权随时修改这些条款，修改后的条款在发布时生效。",
-        "继续使用网站即表示您接受修改后的条款。"
-      ]
-    },
-    {
-      id: "website-use",
-      title: "网站使用",
-      icon: Users,
-      content: [
-        "本网站仅供合法目的使用，您不得将其用于任何非法活动。",
-        "您有责任确保您提供的所有信息准确、真实、完整。",
-        "您不得干扰或破坏网站的正常运行或服务器安全。",
-        "您不得使用自动化程序大量抓取网站内容。",
-        "您同意不发布有害、诽谤、侵权或违法的内容。"
-      ]
-    },
-    {
-      id: "intellectual-property",
-      title: "知识产权",
-      icon: Shield,
-      content: [
-        "网站的所有内容，包括文字、图片、设计等均受知识产权法保护。",
-        "未经明确授权，您不得复制、分发、修改或商业使用网站内容。",
-        "用户生成的内容仍归用户所有，但您授予我们使用许可。",
-        "我们尊重他人的知识产权，如发现侵权请及时联系我们。",
-        "第三方链接的内容不代表我们的观点，其知识产权归原作者所有。"
-      ]
-    },
-    {
-      id: "user-accounts",
-      title: "用户账户",
-      icon: Users,
-      content: [
-        "您有责任保护您的账户信息和密码安全。",
-        "任何通过您账户进行的活动都被视为您的行为。",
-        "如发现账户被盗用，请立即联系我们。",
-        "我们有权在必要时暂停或删除违规账户。",
-        "账户删除后，相关数据可能会被永久删除。"
-      ]
-    },
-    {
-      id: "disclaimer",
-      title: "免责声明",
-      icon: AlertTriangle,
-      content: [
-        "网站内容仅供参考，我们不保证其完全准确性或时效性。",
-        "您使用网站信息的风险由您自行承担。",
-        "我们不对因使用网站而导致的任何损失承担责任。",
-        "第三方链接和服务由其他公司提供，我们不承担相关责任。",
-        "网站可能因维护或其他原因暂时中断服务。"
-      ]
-    },
-    {
-      id: "limitation-liability",
-      title: "责任限制",
-      icon: Scale,
-      content: [
-        "在法律允许的最大范围内，我们的责任仅限于提供网站服务。",
-        "我们不对间接、偶然或后果性损害承担责任。",
-        "任何情况下，我们的总责任不超过您支付给我们的费用。",
-        "某些司法管辖区不允许责任限制，此类限制可能不适用于您。"
-      ]
-    },
-    {
-      id: "governing-law",
-      title: "适用法律",
-      icon: Gavel,
-      content: [
-        "本条款受中华人民共和国法律管辖。",
-        "因本条款产生的争议应通过友好协商解决。",
-        "无法协商解决的争议应提交有管辖权的人民法院裁决。",
-        "条款的部分无效不影响其他条款的效力。"
+        "如果您不同意这些条款，请不要使用本网站。"
       ]
     }
   ];
 
-  const prohibitedActivities = [
+  const defaultProhibitedActivities = [
     "发布虚假、误导或欺诈性信息",
-    "侵犯他人知识产权或隐私权",
-    "发布恶意软件或病毒",
-    "进行网络攻击或破坏活动",
-    "滥用网站功能或服务",
-    "违反相关法律法规的行为"
+    "侵犯他人知识产权或隐私权"
   ];
+
+  const hero = pageContent?.content?.hero || {};
+  const sections = pageContent?.content?.sections || defaultSections;
+  const prohibitedActivities = pageContent?.content?.prohibitedActivities || defaultProhibitedActivities;
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,15 +88,15 @@ const Terms = () => {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-              使用条款
+              {hero.title || '使用条款'}
             </h1>
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              本使用条款规定了您访问和使用AI资讯中心网站的规则和条件。请仔细阅读这些条款。
+              {hero.description || '本使用条款规定了您访问和使用AI资讯中心网站的规则和条件。请仔细阅读这些条款。'}
             </p>
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-8">
               <div className="flex items-center justify-center space-x-2 text-blue-600 dark:text-blue-400">
                 <Clock className="h-5 w-5" />
-                <p className="font-medium">生效日期：2024年7月20日</p>
+                <p className="font-medium">{hero.effectiveDate || '生效日期：2024年7月20日'}</p>
               </div>
             </div>
           </div>

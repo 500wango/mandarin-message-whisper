@@ -1,11 +1,59 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, Cookie, Database, Lock, Users, AlertTriangle, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Privacy = () => {
-  const sections = [
+  const [pageContent, setPageContent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPageContent();
+  }, []);
+
+  const fetchPageContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('page_content')
+        .select('*')
+        .eq('page_key', 'privacy')
+        .eq('is_published', true)
+        .single();
+
+      if (error) {
+        console.error('Error fetching page content:', error);
+        return;
+      }
+
+      setPageContent(data);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-8">
+          <div className="container py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground mt-4">加载中...</p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // 默认内容，如果数据库没有内容则使用
+  const defaultSections = [
     {
       id: "information-collection",
       title: "信息收集",
@@ -16,68 +64,11 @@ const Privacy = () => {
         "技术信息：包括IP地址、浏览器类型、操作系统、访问时间等技术信息。",
         "Cookie信息：我们使用Cookie来记住您的偏好设置和提供个性化服务。"
       ]
-    },
-    {
-      id: "information-use",
-      title: "信息使用",
-      icon: Eye,
-      content: [
-        "提供服务：使用您的信息来提供、维护和改进我们的服务。",
-        "个性化体验：根据您的偏好提供个性化的内容推荐。",
-        "沟通联系：发送重要通知、更新信息或回应您的询问。",
-        "安全保护：检测和防止欺诈、滥用和其他有害活动。",
-        "法律合规：遵守适用的法律法规要求。"
-      ]
-    },
-    {
-      id: "information-sharing",
-      title: "信息共享",
-      icon: Users,
-      content: [
-        "我们不会出售、租赁或以其他方式向第三方披露您的个人信息，除非：",
-        "获得您的明确同意",
-        "为提供您要求的服务所必需",
-        "遵守法律要求或法院命令",
-        "保护我们的合法权益或他人的安全",
-        "与我们的服务提供商共享，但仅限于提供服务所需"
-      ]
-    },
-    {
-      id: "data-security",
-      title: "数据安全",
-      icon: Lock,
-      content: [
-        "加密保护：我们使用SSL加密技术保护数据传输安全。",
-        "访问控制：严格限制对个人信息的访问权限。",
-        "安全监控：持续监控系统安全，及时发现和处理安全威胁。",
-        "定期备份：定期备份重要数据，确保数据不丢失。",
-        "员工培训：对处理个人信息的员工进行安全培训。"
-      ]
-    },
-    {
-      id: "cookie-policy",
-      title: "Cookie政策",
-      icon: Cookie,
-      content: [
-        "必要Cookie：保证网站基本功能正常运行。",
-        "功能Cookie：记住您的偏好设置，如语言选择。",
-        "分析Cookie：帮助我们了解网站使用情况，改进服务质量。",
-        "您可以通过浏览器设置管理Cookie，但禁用某些Cookie可能影响网站功能。"
-      ]
-    },
-    {
-      id: "user-rights",
-      title: "用户权利",
-      icon: Shield,
-      content: [
-        "访问权：您有权了解我们收集和处理的您的个人信息。",
-        "更正权：您有权要求更正不准确的个人信息。",
-        "删除权：在特定情况下，您有权要求删除您的个人信息。",
-        "限制权：您有权要求限制对您个人信息的处理。",
-        "携带权：您有权以结构化、常用的格式获取您的个人信息。"
-      ]
     }
   ];
+
+  const hero = pageContent?.content?.hero || {};
+  const sections = pageContent?.content?.sections || defaultSections;
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,15 +84,15 @@ const Privacy = () => {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-              隐私政策
+              {hero.title || '隐私政策'}
             </h1>
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              我们高度重视您的隐私保护。本隐私政策详细说明了我们如何收集、使用、存储和保护您的个人信息。
+              {hero.description || '我们高度重视您的隐私保护。本隐私政策详细说明了我们如何收集、使用、存储和保护您的个人信息。'}
             </p>
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-8">
               <div className="flex items-center justify-center space-x-2 text-yellow-600 dark:text-yellow-400">
                 <AlertTriangle className="h-5 w-5" />
-                <p className="font-medium">最后更新时间：2024年7月20日</p>
+                <p className="font-medium">{hero.lastUpdated || '最后更新时间：2024年7月20日'}</p>
               </div>
             </div>
           </div>

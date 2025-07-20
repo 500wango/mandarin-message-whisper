@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Mail, 
   Phone, 
@@ -27,33 +28,49 @@ const Contact = () => {
     message: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [pageContent, setPageContent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const contactInfo = [
-    {
-      icon: Mail,
-      title: "邮箱地址",
-      content: "contact@ai-news-center.com",
-      description: "我们会在24小时内回复您的邮件"
-    },
-    {
-      icon: MessageCircle,
-      title: "在线客服",
-      content: "工作日 9:00-18:00",
-      description: "通过网站右下角客服窗口联系我们"
-    },
-    {
-      icon: Building,
-      title: "公司地址",
-      content: "北京市朝阳区科技园区",
-      description: "欢迎预约参观我们的办公室"
-    },
-    {
-      icon: HeadphonesIcon,
-      title: "技术支持",
-      content: "support@ai-news-center.com",
-      description: "技术问题和建议反馈专用邮箱"
+  useEffect(() => {
+    fetchPageContent();
+  }, []);
+
+  const fetchPageContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('page_content')
+        .select('*')
+        .eq('page_key', 'contact')
+        .eq('is_published', true)
+        .single();
+
+      if (error) {
+        console.error('Error fetching page content:', error);
+        return;
+      }
+
+      setPageContent(data);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const getIconComponent = (title: string) => {
+    switch (title) {
+      case '邮箱地址':
+        return Mail;
+      case '在线客服':
+        return MessageCircle;
+      case '公司地址':
+        return Building;
+      case '技术支持':
+        return HeadphonesIcon;
+      default:
+        return Mail;
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -94,6 +111,26 @@ const Contact = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-8">
+          <div className="container py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground mt-4">加载中...</p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const hero = pageContent?.content?.hero || {};
+  const contactInfo = pageContent?.content?.contactInfo || [];
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -108,10 +145,10 @@ const Contact = () => {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-              联系我们
+              {hero.title || '联系我们'}
             </h1>
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              有任何问题、建议或合作意向？我们很乐意听到您的声音，让我们一起推动AI技术的发展和应用。
+              {hero.description || '有任何问题、建议或合作意向？我们很乐意听到您的声音，让我们一起推动AI技术的发展和应用。'}
             </p>
           </div>
         </section>
@@ -126,8 +163,8 @@ const Contact = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {contactInfo.map((info, index) => {
-              const Icon = info.icon;
+            {contactInfo.map((info: any, index: number) => {
+              const Icon = getIconComponent(info.title);
               return (
                 <Card key={index} className="text-center hover:shadow-lg transition-all duration-300 hover:border-primary/40">
                   <CardHeader>

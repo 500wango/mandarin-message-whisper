@@ -1,32 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Brain, Target, Users, Award, Lightbulb, Globe } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const About = () => {
-  const features = [
-    {
-      icon: Brain,
-      title: "专业AI资讯",
-      description: "提供最新、最准确的人工智能行业新闻和趋势分析"
-    },
-    {
-      icon: Target,
-      title: "精选工具推荐",
-      description: "严格筛选并推荐优质AI工具，帮助用户提高工作效率"
-    },
-    {
-      icon: Lightbulb,
-      title: "提示词工程",
-      description: "深入研究和分享AI提示词技巧，释放AI工具的最大潜能"
-    },
-    {
-      icon: Users,
-      title: "社区驱动",
-      description: "建立AI从业者和爱好者交流学习的优质社区平台"
+  const [pageContent, setPageContent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPageContent();
+  }, []);
+
+  const fetchPageContent = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('page_content')
+        .select('*')
+        .eq('page_key', 'about')
+        .eq('is_published', true)
+        .single();
+
+      if (error) {
+        console.error('Error fetching page content:', error);
+        // 如果获取失败，使用默认内容
+        setPageContent(getDefaultContent());
+      } else {
+        setPageContent(data);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setPageContent(getDefaultContent());
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const getDefaultContent = () => ({
+    title: '关于我们',
+    content: {
+      hero: {
+        title: "关于AI资讯中心",
+        description: "我们是一个专注于人工智能领域的专业资讯平台，致力于为AI从业者、研究员和爱好者提供最新、最全面的行业信息和实用工具推荐。"
+      },
+      mission: {
+        title: "我们的使命",
+        content: "通过提供高质量的AI资讯、工具推荐和知识分享，帮助更多人了解和应用人工智能技术，推动AI技术的普及和发展，让AI为人类创造更美好的未来。"
+      },
+      features: [
+        {
+          title: "专业AI资讯",
+          description: "提供最新、最准确的人工智能行业新闻和趋势分析"
+        },
+        {
+          title: "精选工具推荐", 
+          description: "严格筛选并推荐优质AI工具，帮助用户提高工作效率"
+        },
+        {
+          title: "提示词工程",
+          description: "深入研究和分享AI提示词技巧，释放AI工具的最大潜能"
+        },
+        {
+          title: "社区驱动",
+          description: "建立AI从业者和爱好者交流学习的优质社区平台"
+        }
+      ]
+    }
+  });
+
+  const iconMap: { [key: string]: any } = {
+    "专业AI资讯": Brain,
+    "精选工具推荐": Target,
+    "提示词工程": Lightbulb,
+    "社区驱动": Users
+  };
 
   const team = [
     {
@@ -43,6 +91,23 @@ const About = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">加载页面内容...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!pageContent) {
+    return <div>页面内容加载失败</div>;
+  }
+
+  const { content } = pageContent;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -57,10 +122,10 @@ const About = () => {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-              关于AI资讯中心
+              {content.hero?.title || "关于AI资讯中心"}
             </h1>
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              我们是一个专注于人工智能领域的专业资讯平台，致力于为AI从业者、研究员和爱好者提供最新、最全面的行业信息和实用工具推荐。
+              {content.hero?.description || "我们是一个专注于人工智能领域的专业资讯平台，致力于为AI从业者、研究员和爱好者提供最新、最全面的行业信息和实用工具推荐。"}
             </p>
           </div>
         </section>
@@ -73,12 +138,11 @@ const About = () => {
                 <div className="flex justify-center mb-4">
                   <Award className="h-10 w-10 text-primary" />
                 </div>
-                <CardTitle className="text-2xl">我们的使命</CardTitle>
+                <CardTitle className="text-2xl">{content.mission?.title || "我们的使命"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-center text-lg text-muted-foreground leading-relaxed">
-                  通过提供高质量的AI资讯、工具推荐和知识分享，帮助更多人了解和应用人工智能技术，
-                  推动AI技术的普及和发展，让AI为人类创造更美好的未来。
+                  {content.mission?.content || "通过提供高质量的AI资讯、工具推荐和知识分享，帮助更多人了解和应用人工智能技术，推动AI技术的普及和发展，让AI为人类创造更美好的未来。"}
                 </p>
               </CardContent>
             </Card>
@@ -95,14 +159,14 @@ const About = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
+            {content.features?.map((feature: any, index: number) => {
+              const IconComponent = iconMap[feature.title] || Brain;
               return (
                 <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:border-primary/40">
                   <CardHeader>
                     <div className="flex items-center space-x-3">
                       <div className="p-2 rounded-lg bg-primary/10">
-                        <Icon className="h-6 w-6 text-primary" />
+                        <IconComponent className="h-6 w-6 text-primary" />
                       </div>
                       <CardTitle className="text-xl">{feature.title}</CardTitle>
                     </div>
@@ -138,8 +202,8 @@ const About = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">{member.description}</p>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
             ))}
           </div>
         </section>

@@ -156,6 +156,9 @@ const createWelcomeEmailTemplate = (email: string) => {
 
 const sendWelcomeEmail = async (email: string) => {
   try {
+    console.log('Starting to send welcome email to:', email);
+    console.log('Resend API Key available:', !!Deno.env.get('RESEND_API_KEY'));
+    
     const emailResponse = await resend.emails.send({
       from: 'AI Navigator <onboarding@resend.dev>',
       to: [email],
@@ -163,10 +166,17 @@ const sendWelcomeEmail = async (email: string) => {
       html: createWelcomeEmailTemplate(email),
     });
 
-    console.log('Welcome email sent successfully:', emailResponse);
+    console.log('Resend API response:', JSON.stringify(emailResponse, null, 2));
+    
+    if (emailResponse.error) {
+      console.error('Resend API returned error:', emailResponse.error);
+      return { success: false, error: emailResponse.error };
+    }
+    
+    console.log('Welcome email sent successfully with ID:', emailResponse.data?.id);
     return { success: true, data: emailResponse };
   } catch (error) {
-    console.error('Error sending welcome email:', error);
+    console.error('Exception while sending welcome email:', error);
     return { success: false, error };
   }
 };

@@ -366,16 +366,16 @@ const ArticleEditor = () => {
                 <div className="space-y-2">
                   <Label htmlFor="category">分类</Label>
                   <Select 
-                    value={articleData.category_id || ''} 
+                    value={articleData.category_id || 'none'} 
                     onValueChange={(value) => 
-                      setArticleData(prev => ({ ...prev, category_id: value || null }))
+                      setArticleData(prev => ({ ...prev, category_id: value === 'none' ? null : value }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="选择分类" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">无分类</SelectItem>
+                      <SelectItem value="none">无分类</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">

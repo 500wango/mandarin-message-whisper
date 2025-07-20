@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HeroSection } from '@/components/HeroSection';
 import { NewsCard } from '@/components/NewsCard';
 import { ToolCard } from '@/components/ToolCard';
@@ -13,6 +13,8 @@ const Home = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [featuredNews, setFeaturedNews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,40 +78,65 @@ const Home = () => {
     }
   };
 
-  // 模拟数据
-  const featuredNews = [
-    {
-      id: '1',
-      title: 'OpenAI发布GPT-5预览版，多模态能力大幅提升',
-      excerpt: 'OpenAI最新发布的GPT-5预览版在多模态理解、推理能力和安全性方面都有了显著提升，为AI应用带来了新的可能性...',
-      category: '行业动态',
-      publishDate: '2024-01-15',
-      readTime: '5分钟',
-      views: 12580,
-      imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop',
-      featured: true
-    },
-    {
-      id: '2',
-      title: 'Google推出Gemini Ultra商业版，挑战ChatGPT企业市场',
-      excerpt: 'Google正式推出Gemini Ultra的商业版本，专门针对企业用户设计，提供更强的安全性和定制化功能...',
-      category: '产品发布',
-      publishDate: '2024-01-14',
-      readTime: '4分钟',
-      views: 8920,
-      imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=400&fit=crop'
-    },
-    {
-      id: '3',
-      title: 'AI绘画工具Midjourney新版本支持视频生成功能',
-      excerpt: 'Midjourney最新更新加入了视频生成功能，用户现在可以通过文字描述生成短视频内容，为创意工作者提供了新的工具...',
-      category: '工具更新',
-      publishDate: '2024-01-13',
-      readTime: '3分钟',
-      views: 15200,
-      imageUrl: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800&h=400&fit=crop'
+  useEffect(() => {
+    fetchFeaturedArticles();
+  }, []);
+
+  const fetchFeaturedArticles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select(`
+          *,
+          categories (
+            name,
+            color
+          ),
+          profiles (
+            display_name
+          )
+        `)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedNews = data.map((article: any) => ({
+          id: article.id,
+          title: article.title,
+          excerpt: article.excerpt || article.content.substring(0, 150) + '...',
+          category: article.categories?.name || '未分类',
+          publishDate: new Date(article.published_at).toLocaleDateString('zh-CN'),
+          readTime: `${Math.ceil(article.content.length / 300)}分钟`,
+          views: article.view_count || 0,
+          imageUrl: article.featured_image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop',
+          slug: article.slug,
+          featured: true
+        }));
+        setFeaturedNews(formattedNews);
+      }
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+      // 如果获取失败，使用模拟数据作为后备
+      setFeaturedNews([
+        {
+          id: '1',
+          title: 'OpenAI发布GPT-5预览版，多模态能力大幅提升',
+          excerpt: 'OpenAI最新发布的GPT-5预览版在多模态理解、推理能力和安全性方面都有了显著提升，为AI应用带来了新的可能性...',
+          category: '行业动态',
+          publishDate: '2024-01-15',
+          readTime: '5分钟',
+          views: 12580,
+          imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop',
+          featured: true
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const popularTools = [
     {
@@ -174,13 +201,28 @@ const Home = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredNews.map((news, index) => (
-              <div key={news.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <NewsCard {...news} />
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-48 bg-muted rounded-t-lg"></div>
+                  <div className="p-4 bg-card rounded-b-lg border border-t-0">
+                    <div className="h-4 bg-muted rounded mb-2"></div>
+                    <div className="h-4 bg-muted rounded mb-2 w-3/4"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredNews.map((news, index) => (
+                <div key={news.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                  <NewsCard {...news} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

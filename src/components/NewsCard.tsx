@@ -13,6 +13,7 @@ interface NewsCardProps {
   views: number;
   imageUrl: string;
   featured?: boolean;
+  slug?: string;
 }
 
 export const NewsCard = ({
@@ -24,7 +25,8 @@ export const NewsCard = ({
   readTime,
   views,
   imageUrl,
-  featured = false
+  featured = false,
+  slug
 }: NewsCardProps) => {
   return (
     <Card className={`group relative overflow-hidden transition-all duration-300 hover:shadow-card-hover hover:scale-[1.02] ${
@@ -83,7 +85,7 @@ export const NewsCard = ({
 
         {/* Read More Link */}
         <Link
-          to={`/news/${id}`}
+          to={slug ? `/article/${slug}` : `/news/${id}`}
           className="inline-flex items-center space-x-2 text-primary hover:text-primary-glow transition-colors duration-200 text-sm font-medium group/link"
         >
           <span>阅读全文</span>

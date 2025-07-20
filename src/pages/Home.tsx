@@ -1,12 +1,81 @@
+import { useState } from 'react';
 import { HeroSection } from '@/components/HeroSection';
 import { NewsCard } from '@/components/NewsCard';
 import { ToolCard } from '@/components/ToolCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Clock, Flame, Star } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { ArrowRight, Clock, Flame, Star, Mail, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast({
+        title: "请输入邮箱地址",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "请输入有效的邮箱地址",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubscribing(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('newsletter-subscribe', {
+        body: { email: email.trim().toLowerCase() }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.already_subscribed) {
+        toast({
+          title: "已经订阅过了",
+          description: "该邮箱已经在我们的订阅列表中",
+        });
+      } else if (data.reactivated) {
+        toast({
+          title: "重新订阅成功！",
+          description: "欢迎回来！您已重新订阅我们的newsletter",
+        });
+      } else {
+        toast({
+          title: "订阅成功！",
+          description: "感谢您订阅我们的newsletter，我们会定期为您推送最新的AI资讯",
+        });
+      }
+
+      setEmail(''); // 清空输入框
+
+    } catch (error: any) {
+      console.error('Newsletter subscription error:', error);
+      toast({
+        title: "订阅失败",
+        description: error.message || "订阅时出现错误，请稍后重试",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   // 模拟数据
   const featuredNews = [
     {
@@ -148,20 +217,40 @@ const Home = () => {
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <div className="max-w-2xl mx-auto text-center bg-gradient-secondary rounded-2xl p-8 border border-border/40">
-            <h3 className="text-2xl font-bold mb-4 text-foreground">订阅我们的newsletter</h3>
+            <div className="flex justify-center mb-4">
+              <Mail className="h-12 w-12 text-primary animate-glow-pulse" />
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-foreground">订阅我们的Newsletter</h3>
             <p className="text-muted-foreground mb-6">
               获取最新的AI资讯、工具推荐和行业洞察，每周直达您的邮箱
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <form onSubmit={handleNewsletterSubscribe} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
               <input
                 type="email"
                 placeholder="输入您的邮箱地址"
-                className="flex-1 px-4 py-2 rounded-lg bg-background border border-border/40 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubscribing}
+                className="flex-1 px-4 py-2 rounded-lg bg-background border border-border/40 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              <Button className="bg-primary hover:bg-primary-glow transition-all duration-300 hover:shadow-neon">
-                订阅
+              <Button 
+                type="submit"
+                disabled={isSubscribing}
+                className="bg-primary hover:bg-primary-glow transition-all duration-300 hover:shadow-neon disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubscribing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    订阅中...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    订阅
+                  </>
+                )}
               </Button>
-            </div>
+            </form>
           </div>
         </div>
       </section>

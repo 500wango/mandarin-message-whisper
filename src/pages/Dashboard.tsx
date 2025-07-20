@@ -20,7 +20,9 @@ import {
   TrendingUp,
   Users,
   Shield,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  UserCheck
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -65,8 +67,10 @@ const Dashboard = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
+  const [subscribers, setSubscribers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [subscribersLoading, setSubscribersLoading] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     published: 0,
@@ -82,9 +86,10 @@ const Dashboard = () => {
     
     fetchProfile();
     fetchArticles();
-    // 如果是管理员，获取所有用户
+    // 如果是管理员，获取所有用户和订阅者
     if (profile?.role === 'admin') {
       fetchAllUsers();
+      fetchSubscribers();
     }
   }, [user, navigate, profile?.role]);
 
@@ -125,6 +130,29 @@ const Dashboard = () => {
     }
     
     setUsersLoading(false);
+  };
+
+  const fetchSubscribers = async () => {
+    if (!user || profile?.role !== 'admin') return;
+    
+    setSubscribersLoading(true);
+    
+    const { data, error } = await supabase
+      .from('newsletter_subscribers')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      toast({
+        title: "获取订阅者列表失败",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setSubscribers(data || []);
+    }
+    
+    setSubscribersLoading(false);
   };
 
   const fetchArticles = async () => {
@@ -302,16 +330,22 @@ const Dashboard = () => {
         )}
 
         <Tabs defaultValue="articles" className="space-y-6">
-          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-3' : 'grid-cols-1'}`}>
             <TabsTrigger value="articles" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               文章管理
             </TabsTrigger>
             {profile?.role === 'admin' && (
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                用户管理
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  用户管理
+                </TabsTrigger>
+                <TabsTrigger value="subscribers" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  订阅管理
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -466,62 +500,140 @@ const Dashboard = () => {
           </TabsContent>
 
           {profile?.role === 'admin' && (
-            <TabsContent value="users" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>用户管理</CardTitle>
-                  <CardDescription>管理所有用户的角色和权限</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {usersLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-                      <p className="mt-2 text-muted-foreground">加载用户数据...</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {allUsers.map((userProfile) => (
-                        <div
-                          key={userProfile.id}
-                          className="flex items-center justify-between p-4 border border-border/40 rounded-lg"
-                        >
-                          <div className="flex items-center space-x-4">
-                            <User className="h-8 w-8 text-muted-foreground" />
-                            <div>
-                              <h4 className="font-medium">{userProfile.display_name || userProfile.email}</h4>
-                              <p className="text-sm text-muted-foreground">{userProfile.email}</p>
-                              <p className="text-xs text-muted-foreground">
-                                注册时间：{formatDate(userProfile.created_at)}
-                              </p>
+            <>
+              <TabsContent value="users" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>用户管理</CardTitle>
+                    <CardDescription>管理所有用户的角色和权限</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {usersLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                        <p className="mt-2 text-muted-foreground">加载用户数据...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {allUsers.map((userProfile) => (
+                          <div
+                            key={userProfile.id}
+                            className="flex items-center justify-between p-4 border border-border/40 rounded-lg"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <User className="h-8 w-8 text-muted-foreground" />
+                              <div>
+                                <h4 className="font-medium">{userProfile.display_name || userProfile.email}</h4>
+                                <p className="text-sm text-muted-foreground">{userProfile.email}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  注册时间：{formatDate(userProfile.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Badge 
+                                variant={userProfile.role === 'admin' ? 'destructive' : 'secondary'}
+                                className={userProfile.role === 'admin' ? 'bg-red-500/20 text-red-400 border-red-500/30' : ''}
+                              >
+                                {userProfile.role === 'admin' ? '管理员' : '普通用户'}
+                              </Badge>
+                              <Select
+                                value={userProfile.role}
+                                onValueChange={(newRole) => handleUpdateUserRole(userProfile.id, newRole)}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="user">普通用户</SelectItem>
+                                  <SelectItem value="admin">管理员</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <Badge 
-                              variant={userProfile.role === 'admin' ? 'destructive' : 'secondary'}
-                              className={userProfile.role === 'admin' ? 'bg-red-500/20 text-red-400 border-red-500/30' : ''}
-                            >
-                              {userProfile.role === 'admin' ? '管理员' : '普通用户'}
-                            </Badge>
-                            <Select
-                              value={userProfile.role}
-                              onValueChange={(newRole) => handleUpdateUserRole(userProfile.id, newRole)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="user">普通用户</SelectItem>
-                                <SelectItem value="admin">管理员</SelectItem>
-                              </SelectContent>
-                            </Select>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="subscribers" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Newsletter 订阅管理</CardTitle>
+                    <CardDescription>管理所有newsletter订阅者</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {subscribersLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                        <p className="mt-2 text-muted-foreground">加载订阅者数据...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="h-4 w-4 text-green-500" />
+                              <span>总订阅数: <span className="font-medium">{subscribers.length}</span></span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-blue-500" />
+                              <span>活跃订阅: <span className="font-medium">{subscribers.filter(s => s.is_active).length}</span></span>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                        
+                        <div className="space-y-4">
+                          {subscribers.length === 0 ? (
+                            <div className="text-center py-8">
+                              <Mail className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                              <h3 className="text-lg font-medium mb-2">暂无订阅者</h3>
+                              <p className="text-muted-foreground">还没有用户订阅newsletter</p>
+                            </div>
+                          ) : (
+                            subscribers.map((subscriber) => (
+                              <div
+                                key={subscriber.id}
+                                className="flex items-center justify-between p-4 border border-border/40 rounded-lg"
+                              >
+                                <div className="flex items-center space-x-4">
+                                  <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                                    subscriber.is_active ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                                  }`}>
+                                    <Mail className="h-4 w-4" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium">{subscriber.email}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      订阅时间：{formatDate(subscriber.subscribed_at)}
+                                    </p>
+                                    {subscriber.ip_address && (
+                                      <p className="text-xs text-muted-foreground">
+                                        IP: {subscriber.ip_address}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                  <Badge 
+                                    variant={subscriber.is_active ? 'default' : 'secondary'}
+                                    className={subscriber.is_active ? 'bg-green-500/20 text-green-400 border-green-500/30' : ''}
+                                  >
+                                    {subscriber.is_active ? '活跃' : '已取消'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </>
           )}
         </Tabs>
       </div>

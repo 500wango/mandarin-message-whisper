@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -15,7 +17,10 @@ import {
   MoreHorizontal, 
   Calendar,
   User,
-  TrendingUp
+  TrendingUp,
+  Users,
+  Shield,
+  AlertCircle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -41,6 +46,14 @@ interface Article {
 }
 
 interface Profile {
+  id: string;
+  display_name: string;
+  email: string;
+  role: string;
+  created_at: string;
+}
+
+interface UserProfile {
   display_name: string;
   role: string;
 }
@@ -50,8 +63,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [articles, setArticles] = useState<Article[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     published: 0,
@@ -67,7 +82,11 @@ const Dashboard = () => {
     
     fetchProfile();
     fetchArticles();
-  }, [user, navigate]);
+    // 如果是管理员，获取所有用户
+    if (profile?.role === 'admin') {
+      fetchAllUsers();
+    }
+  }, [user, navigate, profile?.role]);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -85,12 +104,35 @@ const Dashboard = () => {
     }
   };
 
+  const fetchAllUsers = async () => {
+    if (!user || profile?.role !== 'admin') return;
+    
+    setUsersLoading(true);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, display_name, email, role, created_at')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      toast({
+        title: "获取用户列表失败",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setAllUsers(data || []);
+    }
+    
+    setUsersLoading(false);
+  };
+
   const fetchArticles = async () => {
     if (!user) return;
     
     setLoading(true);
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('articles')
       .select(`
         *,
@@ -98,9 +140,14 @@ const Dashboard = () => {
           name,
           color
         )
-      `)
-      .eq('author_id', user.id)
-      .order('updated_at', { ascending: false });
+      `);
+    
+    // 如果不是管理员，只显示自己的文章
+    if (profile?.role !== 'admin') {
+      query = query.eq('author_id', user.id);
+    }
+    
+    const { data, error } = await query.order('updated_at', { ascending: false });
       
     if (error) {
       toast({
@@ -149,6 +196,27 @@ const Dashboard = () => {
     }
   };
 
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', userId);
+      
+    if (error) {
+      toast({
+        title: "更新用户角色失败",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "角色更新成功",
+        description: "用户角色已更新",
+      });
+      fetchAllUsers();
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -188,16 +256,26 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">管理面板</h1>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                管理面板
+                {profile?.role === 'admin' && (
+                  <Badge variant="default" className="bg-red-500/20 text-red-400 border-red-500/30">
+                    <Shield className="mr-1 h-3 w-3" />
+                    管理员
+                  </Badge>
+                )}
+              </h1>
               <p className="text-muted-foreground">
                 欢迎回来，{profile?.display_name || user?.email}
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button onClick={() => navigate('/dashboard/editor')}>
-                <Plus className="mr-2 h-4 w-4" />
-                新建文章
-              </Button>
+              {profile?.role === 'admin' && (
+                <Button onClick={() => navigate('/dashboard/editor')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  新建文章
+                </Button>
+              )}
               <Button variant="outline" onClick={handleSignOut}>
                 退出登录
               </Button>
@@ -207,140 +285,245 @@ const Dashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">总文章数</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">已发布</CardTitle>
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-400">{stats.published}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">草稿</CardTitle>
-              <Edit className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-400">{stats.drafts}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">总浏览量</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalViews}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 文章列表 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>我的文章</CardTitle>
-            <CardDescription>管理您的所有文章内容</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {articles.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">还没有文章</h3>
-                <p className="text-muted-foreground mb-4">
-                  开始创建您的第一篇文章吧
-                </p>
-                <Button onClick={() => navigate('/dashboard/editor')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  新建文章
-                </Button>
+        {profile?.role !== 'admin' && (
+          <Card className="mb-8 border-yellow-500/30 bg-yellow-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <div>
+                  <p className="font-medium text-yellow-600 dark:text-yellow-400">权限提示</p>
+                  <p className="text-sm text-yellow-600/80 dark:text-yellow-400/80">
+                    您是普通用户，只能查看文章内容。如需创建或编辑文章，请联系管理员提升权限。
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {articles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-medium truncate">{article.title}</h3>
-                        {getStatusBadge(article.status)}
-                        {article.categories && (
-                          <Badge 
-                            variant="outline" 
-                            style={{ 
-                              borderColor: article.categories.color + '50', 
-                              color: article.categories.color 
-                            }}
-                          >
-                            {article.categories.name}
-                          </Badge>
+            </CardContent>
+          </Card>
+        )}
+
+        <Tabs defaultValue="articles" className="space-y-6">
+          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <TabsTrigger value="articles" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              文章管理
+            </TabsTrigger>
+            {profile?.role === 'admin' && (
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                用户管理
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <TabsContent value="articles" className="space-y-6">
+            {/* 统计卡片 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    {profile?.role === 'admin' ? '全站文章' : '我的文章'}
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">已发布</CardTitle>
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-400">{stats.published}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">草稿</CardTitle>
+                  <Edit className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-400">{stats.drafts}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">总浏览量</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary">{stats.totalViews}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 文章列表 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{profile?.role === 'admin' ? '所有文章' : '我的文章'}</CardTitle>
+                <CardDescription>
+                  {profile?.role === 'admin' ? '管理全站文章内容' : '查看您的文章内容'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {articles.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">
+                      {profile?.role === 'admin' ? '还没有文章' : '您还没有文章'}
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      {profile?.role === 'admin' 
+                        ? '开始创建第一篇文章吧' 
+                        : '请联系管理员创建文章'
+                      }
+                    </p>
+                    {profile?.role === 'admin' && (
+                      <Button onClick={() => navigate('/dashboard/editor')}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        新建文章
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {articles.map((article) => (
+                      <div
+                        key={article.id}
+                        className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="font-medium truncate">{article.title}</h3>
+                            {getStatusBadge(article.status)}
+                            {article.categories && (
+                              <Badge 
+                                variant="outline" 
+                                style={{ 
+                                  borderColor: article.categories.color + '50', 
+                                  color: article.categories.color 
+                                }}
+                              >
+                                {article.categories.name}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate mb-2">
+                            {article.excerpt}
+                          </p>
+                          <div className="flex items-center text-xs text-muted-foreground space-x-4">
+                            <span className="flex items-center">
+                              <Calendar className="mr-1 h-3 w-3" />
+                              {formatDate(article.updated_at)}
+                            </span>
+                            <span className="flex items-center">
+                              <Eye className="mr-1 h-3 w-3" />
+                              {article.view_count} 浏览
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {profile?.role === 'admin' && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => navigate(`/dashboard/editor/${article.id}`)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                编辑
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => window.open(`/article/${article.slug}`, '_blank')}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                预览
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteArticle(article.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                删除
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground truncate mb-2">
-                        {article.excerpt}
-                      </p>
-                      <div className="flex items-center text-xs text-muted-foreground space-x-4">
-                        <span className="flex items-center">
-                          <Calendar className="mr-1 h-3 w-3" />
-                          {formatDate(article.updated_at)}
-                        </span>
-                        <span className="flex items-center">
-                          <Eye className="mr-1 h-3 w-3" />
-                          {article.view_count} 浏览
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => navigate(`/dashboard/editor/${article.id}`)}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => window.open(`/article/${article.slug}`, '_blank')}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          预览
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteArticle(article.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {profile?.role === 'admin' && (
+            <TabsContent value="users" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>用户管理</CardTitle>
+                  <CardDescription>管理所有用户的角色和权限</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {usersLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                      <p className="mt-2 text-muted-foreground">加载用户数据...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {allUsers.map((userProfile) => (
+                        <div
+                          key={userProfile.id}
+                          className="flex items-center justify-between p-4 border border-border/40 rounded-lg"
+                        >
+                          <div className="flex items-center space-x-4">
+                            <User className="h-8 w-8 text-muted-foreground" />
+                            <div>
+                              <h4 className="font-medium">{userProfile.display_name || userProfile.email}</h4>
+                              <p className="text-sm text-muted-foreground">{userProfile.email}</p>
+                              <p className="text-xs text-muted-foreground">
+                                注册时间：{formatDate(userProfile.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Badge 
+                              variant={userProfile.role === 'admin' ? 'destructive' : 'secondary'}
+                              className={userProfile.role === 'admin' ? 'bg-red-500/20 text-red-400 border-red-500/30' : ''}
+                            >
+                              {userProfile.role === 'admin' ? '管理员' : '普通用户'}
+                            </Badge>
+                            <Select
+                              value={userProfile.role}
+                              onValueChange={(newRole) => handleUpdateUserRole(userProfile.id, newRole)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="user">普通用户</SelectItem>
+                                <SelectItem value="admin">管理员</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </div>
   );

@@ -1,20 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Brain, Menu, X, Zap, Sparkles, User, LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
+interface NavigationItem {
+  id: string;
+  name: string;
+  href: string;
+  icon: string;
+  sort_order: number;
+}
 
 export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [navigation, setNavigation] = useState<NavigationItem[]>([]);
+  const [siteTitle, setSiteTitle] = useState('AI资讯中心');
   const location = useLocation();
   const { user, signOut } = useAuth();
 
-  const navigation = [
-    { name: '首页', href: '/', icon: Brain },
-    { name: 'AI新闻', href: '/news', icon: Zap },
-    { name: 'AI工具', href: '/tools', icon: Sparkles },
-    { name: '提示词工程', href: '/prompts', icon: Brain },
-  ];
+  // 图标映射
+  const iconMap: Record<string, any> = {
+    Brain,
+    Zap,
+    Sparkles,
+    Menu,
+    X,
+    User,
+    LogIn
+  };
+
+  useEffect(() => {
+    fetchNavigationItems();
+    fetchSiteSettings();
+  }, []);
+
+  const fetchNavigationItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('navigation_items')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      if (error) throw error;
+      setNavigation(data || []);
+    } catch (error) {
+      console.error('Error fetching navigation items:', error);
+      // 使用默认导航作为后备
+      setNavigation([
+        { id: '1', name: '首页', href: '/', icon: 'Brain', sort_order: 1 },
+        { id: '2', name: 'AI新闻', href: '/news', icon: 'Zap', sort_order: 2 },
+        { id: '3', name: 'AI工具', href: '/tools', icon: 'Sparkles', sort_order: 3 },
+        { id: '4', name: '提示词工程', href: '/prompts', icon: 'Brain', sort_order: 4 },
+      ]);
+    }
+  };
+
+  const fetchSiteSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('setting_value')
+        .eq('setting_key', 'site_title')
+        .single();
+
+      if (error) throw error;
+      if (data) setSiteTitle(data.setting_value);
+    } catch (error) {
+      console.error('Error fetching site settings:', error);
+    }
+  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -28,17 +85,17 @@ export const Header = () => {
             <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
           <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">
-            AI资讯中心
+            {siteTitle}
           </span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
           {navigation.map((item) => {
-            const Icon = item.icon;
+            const IconComponent = iconMap[item.icon] || Brain;
             return (
               <Link
-                key={item.name}
+                key={item.id}
                 to={item.href}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-muted/80 ${
                   isActive(item.href)
@@ -46,7 +103,7 @@ export const Header = () => {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <IconComponent className="h-4 w-4" />
                 <span>{item.name}</span>
               </Link>
             );
@@ -98,10 +155,10 @@ export const Header = () => {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 bg-card/95 backdrop-blur border-b border-border/40">
             {navigation.map((item) => {
-              const Icon = item.icon;
+              const IconComponent = iconMap[item.icon] || Brain;
               return (
                 <Link
-                  key={item.name}
+                  key={item.id}
                   to={item.href}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
                     isActive(item.href)
@@ -110,7 +167,7 @@ export const Header = () => {
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <Icon className="h-5 w-5" />
+                  <IconComponent className="h-5 w-5" />
                   <span>{item.name}</span>
                 </Link>
               );

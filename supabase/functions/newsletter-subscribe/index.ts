@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,10 +18,10 @@ const handler = async (req: Request): Promise<Response> => {
 
   if (req.method !== 'POST') {
     return new Response(
-      JSON.stringify({ error: '只支持POST请求' }),
+      JSON.stringify({ error: 'Method not allowed' }),
       { 
         status: 405, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
       }
     );
   }
@@ -29,128 +29,125 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email }: SubscribeRequest = await req.json();
 
-    // 验证邮箱格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
+    if (!email || typeof email !== 'string') {
       return new Response(
-        JSON.stringify({ error: '请输入有效的邮箱地址' }),
+        JSON.stringify({ error: '邮箱地址是必需的' }),
         { 
           status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
         }
       );
     }
 
-    // 创建Supabase客户端，使用service role key来绕过RLS
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return new Response(
+        JSON.stringify({ error: '请输入有效的邮箱地址' }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        }
+      );
+    }
 
-    // 获取用户信息（如果可用）
-    const userAgent = req.headers.get('user-agent') || '';
-    const forwarded = req.headers.get('x-forwarded-for');
-    const ipAddress = forwarded ? forwarded.split(',')[0] : req.headers.get('x-real-ip') || '';
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log(`[NEWSLETTER-SUBSCRIBE] 尝试订阅邮箱: ${email}`);
+    const normalizedEmail = email.trim().toLowerCase();
 
-    // 检查邮箱是否已经订阅
-    const { data: existingSubscriber, error: checkError } = await supabaseClient
+    // Check if email already exists
+    const { data: existingSubscriber, error: checkError } = await supabase
       .from('newsletter_subscribers')
-      .select('id, is_active')
-      .eq('email', email)
+      .select('is_active')
+      .eq('email', normalizedEmail)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 是"找不到记录"的错误码
-      console.error('[NEWSLETTER-SUBSCRIBE] 检查现有订阅时出错:', checkError);
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 means no rows found, which is expected for new subscribers
+      console.error('Error checking existing subscriber:', checkError);
       throw new Error('检查订阅状态时出错');
     }
 
+    let response_data: any = {};
+
     if (existingSubscriber) {
       if (existingSubscriber.is_active) {
-        return new Response(
-          JSON.stringify({ 
-            message: '该邮箱已经订阅过了',
-            already_subscribed: true 
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+        // Already subscribed and active
+        response_data = { 
+          success: true, 
+          already_subscribed: true,
+          message: '该邮箱已经在我们的订阅列表中'
+        };
       } else {
-        // 重新激活已取消的订阅
-        const { error: updateError } = await supabaseClient
+        // Reactivate subscription
+        const { error: updateError } = await supabase
           .from('newsletter_subscribers')
           .update({ 
-            is_active: true, 
-            subscribed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString() 
+            is_active: true,
+            subscribed_at: new Date().toISOString()
           })
-          .eq('id', existingSubscriber.id);
+          .eq('email', normalizedEmail);
 
         if (updateError) {
-          console.error('[NEWSLETTER-SUBSCRIBE] 重新激活订阅时出错:', updateError);
+          console.error('Error reactivating subscription:', updateError);
           throw new Error('重新激活订阅时出错');
         }
 
-        console.log(`[NEWSLETTER-SUBSCRIBE] 重新激活订阅成功: ${email}`);
-        return new Response(
-          JSON.stringify({ 
-            message: '重新订阅成功！',
-            reactivated: true 
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+        response_data = { 
+          success: true, 
+          reactivated: true,
+          message: '欢迎回来！您已重新订阅我们的newsletter'
+        };
       }
+    } else {
+      // New subscription
+      const { error: insertError } = await supabase
+        .from('newsletter_subscribers')
+        .insert({
+          email: normalizedEmail,
+          user_agent: req.headers.get('user-agent') || null,
+          ip_address: req.headers.get('x-forwarded-for') || 
+                      req.headers.get('cf-connecting-ip') || 
+                      null
+        });
+
+      if (insertError) {
+        console.error('Error inserting new subscriber:', insertError);
+        throw new Error('订阅时出错');
+      }
+
+      response_data = { 
+        success: true, 
+        new_subscription: true,
+        message: '感谢您订阅我们的newsletter'
+      };
     }
 
-    // 创建新订阅
-    const { data: newSubscriber, error: insertError } = await supabaseClient
-      .from('newsletter_subscribers')
-      .insert({
-        email: email.toLowerCase().trim(),
-        user_agent: userAgent,
-        ip_address: ipAddress,
-        is_active: true
-      })
-      .select('id')
-      .single();
+    // Log successful subscription
+    console.log(`Newsletter subscription: ${normalizedEmail}`, response_data);
 
-    if (insertError) {
-      console.error('[NEWSLETTER-SUBSCRIBE] 创建订阅时出错:', insertError);
-      throw new Error('创建订阅时出错');
-    }
-
-    console.log(`[NEWSLETTER-SUBSCRIBE] 新订阅创建成功: ${email}, ID: ${newSubscriber.id}`);
-
-    // TODO: 当提供Resend API密钥后，在这里添加欢迎邮件发送功能
-    // 现在先返回成功消息
-    
     return new Response(
-      JSON.stringify({ 
-        message: '订阅成功！欢迎加入我们的newsletter',
-        subscriber_id: newSubscriber.id
-      }),
-      { 
-        status: 201, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify(response_data),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     );
 
   } catch (error: any) {
-    console.error('[NEWSLETTER-SUBSCRIBE] 处理订阅时出现错误:', error);
+    console.error('Error in newsletter-subscribe function:', error);
+    
     return new Response(
       JSON.stringify({ 
-        error: error.message || '订阅时出现未知错误' 
+        error: error.message || '订阅时发生未知错误，请稍后重试' 
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     );
   }

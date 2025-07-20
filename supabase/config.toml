@@ -1,1 +1,4 @@
 project_id = "dembuvipwnfolksvqygl"
+
+[functions.newsletter-subscribe]
+verify_jwt = false

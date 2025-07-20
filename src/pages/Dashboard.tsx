@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import CategoryManager from '@/components/CategoryManager';
 import { 
   Plus, 
   FileText, 
@@ -24,7 +25,8 @@ import {
   Mail,
   UserCheck,
   Image,
-  Globe
+  Globe,
+  Tag
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -368,13 +370,17 @@ const Dashboard = () => {
         )}
 
         <Tabs defaultValue="articles" className="space-y-6">
-          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-1'}`}>
+          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-1'}`}>
             <TabsTrigger value="articles" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               文章管理
             </TabsTrigger>
             {profile?.role === 'admin' && (
               <>
+                <TabsTrigger value="categories" className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  分类管理
+                </TabsTrigger>
                 <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   用户管理
@@ -539,7 +545,12 @@ const Dashboard = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+            </TabsContent>
+
+            {/* 分类管理 */}
+            <TabsContent value="categories">
+              <CategoryManager />
+            </TabsContent>
 
           {profile?.role === 'admin' && (
             <>

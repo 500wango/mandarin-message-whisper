@@ -178,6 +178,67 @@ serve(async (req) => {
           .trim()
       }
 
+      // 智能分类功能（如果没有指定分类且启用了自动分类）
+      if (!body.category_id && body.auto_categorize !== false) {
+        console.log('Attempting auto-categorization for article:', body.title)
+        
+        // 获取所有分类
+        const { data: categories, error: categoriesError } = await supabase
+          .from('categories')
+          .select('id, name, slug, description')
+        
+        if (!categoriesError && categories && categories.length > 0) {
+          // 简单的关键词匹配算法
+          const contentLower = (body.title + ' ' + (body.excerpt || '') + ' ' + body.content).toLowerCase()
+          
+          // 定义分类关键词映射
+          const categoryKeywords: { [key: string]: string[] } = {
+            '科技': ['ai', '人工智能', '机器学习', '深度学习', '算法', '技术', '科技', '编程', '代码', '开发', '软件', '硬件', '芯片', '处理器'],
+            '新闻': ['新闻', '资讯', '消息', '发布', '宣布', '报道', '最新', '今日', '昨日', '本周', '本月'],
+            '教程': ['教程', '指南', '如何', '步骤', '方法', '学习', '入门', '基础', '进阶', '实战', '案例', '示例'],
+            '观点': ['观点', '看法', '分析', '评论', '思考', '讨论', '观察', '预测', '趋势', '未来', '展望', '反思']
+          }
+          
+          let bestMatch = { categoryId: '', score: 0 }
+          
+          // 为每个分类计算匹配分数
+          for (const category of categories) {
+            const keywords = categoryKeywords[category.name] || []
+            let score = 0
+            
+            // 检查关键词匹配
+            for (const keyword of keywords) {
+              const matches = contentLower.split(keyword).length - 1
+              score += matches
+            }
+            
+            // 如果分类名称直接在内容中出现，增加权重
+            if (contentLower.includes(category.name.toLowerCase())) {
+              score += 10
+            }
+            
+            // 如果分类slug在内容中出现，增加权重
+            if (contentLower.includes(category.slug.toLowerCase())) {
+              score += 5
+            }
+            
+            console.log(`Category "${category.name}" score: ${score}`)
+            
+            if (score > bestMatch.score) {
+              bestMatch = { categoryId: category.id, score }
+            }
+          }
+          
+          // 如果找到匹配度较高的分类（至少1分），则使用它
+          if (bestMatch.score > 0) {
+            body.category_id = bestMatch.categoryId
+            console.log(`Auto-categorized article to category ID: ${bestMatch.categoryId} (score: ${bestMatch.score})`)
+          } else {
+            console.log('No suitable category found for auto-categorization')
+          }
+        }
+      }
+
       // 设置默认作者（如果通过API密钥调用）
       if (apiKey && !body.author_id) {
         // 获取第一个管理员作为默认作者

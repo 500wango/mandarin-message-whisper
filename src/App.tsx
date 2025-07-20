@@ -17,6 +17,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import PageEditor from "./pages/PageEditor";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/dashboard/editor" element={<ArticleEditor />} />
             <Route path="/dashboard/editor/:id" element={<ArticleEditor />} />
             <Route path="/dashboard/media" element={<MediaManager />} />
+            <Route path="/dashboard/page-editor/:pageKey" element={<PageEditor />} />
             <Route path="/article/:slug" element={<Article />} />
             <Route path="/prompts" element={<Prompts />} />
             <Route path="/about" element={<About />} />

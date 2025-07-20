@@ -23,7 +23,8 @@ import {
   AlertCircle,
   Mail,
   UserCheck,
-  Image
+  Image,
+  Globe
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -71,9 +72,11 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [pageContents, setPageContents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
   const [subscribersLoading, setSubscribersLoading] = useState(false);
+  const [pageContentsLoading, setPageContentsLoading] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     published: 0,
@@ -93,6 +96,7 @@ const Dashboard = () => {
     if (profile?.role === 'admin') {
       fetchAllUsers();
       fetchSubscribers();
+      fetchPageContents();
     }
   }, [user, navigate, profile?.role]);
 
@@ -156,6 +160,29 @@ const Dashboard = () => {
     }
     
     setSubscribersLoading(false);
+  };
+
+  const fetchPageContents = async () => {
+    if (!user || profile?.role !== 'admin') return;
+    
+    setPageContentsLoading(true);
+    
+    const { data, error } = await (supabase as any)
+      .from('page_content')
+      .select('*')
+      .order('page_key', { ascending: true });
+      
+    if (error) {
+      toast({
+        title: "获取页面内容失败",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setPageContents(data || []);
+    }
+    
+    setPageContentsLoading(false);
   };
 
   const fetchArticles = async () => {
@@ -341,7 +368,7 @@ const Dashboard = () => {
         )}
 
         <Tabs defaultValue="articles" className="space-y-6">
-          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-3' : 'grid-cols-1'}`}>
+          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-1'}`}>
             <TabsTrigger value="articles" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               文章管理
@@ -355,6 +382,10 @@ const Dashboard = () => {
                 <TabsTrigger value="subscribers" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   订阅管理
+                </TabsTrigger>
+                <TabsTrigger value="pages" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  页面管理
                 </TabsTrigger>
               </>
             )}
@@ -640,6 +671,83 @@ const Dashboard = () => {
                           )}
                         </div>
                       </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="pages" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>页面内容管理</CardTitle>
+                    <CardDescription>编辑网站公司信息页面的内容</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {pageContentsLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                        <p className="mt-2 text-muted-foreground">加载页面数据...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {pageContents.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Globe className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                            <h3 className="text-lg font-medium mb-2">暂无页面内容</h3>
+                            <p className="text-muted-foreground">页面内容数据还未初始化</p>
+                          </div>
+                        ) : (
+                          pageContents.map((page) => (
+                            <div
+                              key={page.id}
+                              className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-3 mb-2">
+                                  <h3 className="font-medium">{page.title}</h3>
+                                  <Badge variant="outline">
+                                    {page.page_key}
+                                  </Badge>
+                                  <Badge 
+                                    variant={page.is_published ? 'default' : 'secondary'}
+                                    className={page.is_published ? 'bg-green-500/20 text-green-400 border-green-500/30' : ''}
+                                  >
+                                    {page.is_published ? '已发布' : '未发布'}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate mb-2">
+                                  {page.meta_description}
+                                </p>
+                                <div className="flex items-center text-xs text-muted-foreground space-x-4">
+                                  <span className="flex items-center">
+                                    <Calendar className="mr-1 h-3 w-3" />
+                                    {formatDate(page.updated_at)}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => navigate(`/dashboard/page-editor/${page.page_key}`)}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  编辑
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(`/${page.page_key}`, '_blank')}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  预览
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     )}
                   </CardContent>
                 </Card>

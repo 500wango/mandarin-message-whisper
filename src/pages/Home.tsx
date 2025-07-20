@@ -13,7 +13,7 @@ const Home = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
-  const [featuredNews, setFeaturedNews] = useState<any[]>([]);
+  const [categorizedNews, setCategorizedNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
@@ -79,60 +79,87 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchFeaturedArticles();
+    fetchCategorizedArticles();
   }, []);
 
-  const fetchFeaturedArticles = async () => {
+  const fetchCategorizedArticles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('articles')
-        .select(`
-          *,
-          categories (
-            name,
-            color
-          ),
-          profiles (
-            display_name
-          )
-        `)
-        .eq('status', 'published')
-        .order('published_at', { ascending: false })
-        .limit(3);
+      // 首先获取所有分类
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
 
-      if (error) throw error;
+      if (categoriesError) throw categoriesError;
 
-      if (data) {
-        const formattedNews = data.map((article: any) => ({
-          id: article.id,
-          title: article.title,
-          excerpt: article.excerpt || article.content.substring(0, 150) + '...',
-          category: article.categories?.name || '未分类',
-          publishDate: new Date(article.published_at).toLocaleDateString('zh-CN'),
-          readTime: `${Math.ceil(article.content.length / 300)}分钟`,
-          views: article.view_count || 0,
-          imageUrl: article.featured_image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop',
-          slug: article.slug,
-          featured: true
-        }));
-        setFeaturedNews(formattedNews);
+      if (!categories || categories.length === 0) {
+        setCategorizedNews([]);
+        setLoading(false);
+        return;
       }
+
+      // 获取每个分类下的最新文章
+      const categoriesWithArticles = await Promise.all(
+        categories.map(async (category) => {
+          const { data: articles, error: articlesError } = await supabase
+            .from('articles')
+            .select(`
+              *,
+              categories (
+                name,
+                color,
+                slug
+              ),
+              profiles (
+                display_name
+              )
+            `)
+            .eq('status', 'published')
+            .eq('category_id', category.id)
+            .order('published_at', { ascending: false })
+            .limit(3);
+
+          if (articlesError) {
+            console.error(`Error fetching articles for category ${category.name}:`, articlesError);
+            return null;
+          }
+
+          if (!articles || articles.length === 0) {
+            return null;
+          }
+
+          const formattedArticles = articles.map((article: any) => ({
+            id: article.id,
+            title: article.title,
+            excerpt: article.excerpt || article.content.substring(0, 150) + '...',
+            category: article.categories?.name || category.name,
+            publishDate: new Date(article.published_at).toLocaleDateString('zh-CN'),
+            readTime: `${Math.ceil(article.content.length / 300)}分钟`,
+            views: article.view_count || 0,
+            imageUrl: article.featured_image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop',
+            slug: article.slug,
+            featured: true
+          }));
+
+          return {
+            category: {
+              id: category.id,
+              name: category.name,
+              color: category.color,
+              slug: category.slug
+            },
+            articles: formattedArticles
+          };
+        })
+      );
+
+      // 过滤掉没有文章的分类
+      const validCategories = categoriesWithArticles.filter(item => item !== null);
+      setCategorizedNews(validCategories);
+
     } catch (error) {
-      console.error('Error fetching articles:', error);
-      // 如果获取失败，使用模拟数据作为后备
-      setFeaturedNews([
-        {
-          id: '1',
-          title: 'OpenAI发布GPT-5预览版，多模态能力大幅提升',
-          excerpt: 'OpenAI最新发布的GPT-5预览版在多模态理解、推理能力和安全性方面都有了显著提升，为AI应用带来了新的可能性...',
-          category: '行业动态',
-          publishDate: '2024-01-15',
-          readTime: '5分钟',
-          views: 12580,
-          imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop',
-          featured: true
-        }
-      ]);
+      console.error('Error fetching categorized articles:', error);
+      setCategorizedNews([]);
     } finally {
       setLoading(false);
     }
@@ -182,15 +209,15 @@ const Home = () => {
       {/* Hero Section */}
       <HeroSection />
 
-      {/* Featured News Section */}
+      {/* Categorized News Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-3">
               <Flame className="h-6 w-6 text-primary" />
-              <h2 className="text-3xl font-bold text-foreground">热门资讯</h2>
+              <h2 className="text-3xl font-bold text-foreground">最新资讯</h2>
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                最新
+                分类展示
               </Badge>
             </div>
             <Button variant="outline" className="border-primary/20 hover:border-primary" asChild>
@@ -202,23 +229,59 @@ const Home = () => {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-12">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="h-48 bg-muted rounded-t-lg"></div>
-                  <div className="p-4 bg-card rounded-b-lg border border-t-0">
-                    <div className="h-4 bg-muted rounded mb-2"></div>
-                    <div className="h-4 bg-muted rounded mb-2 w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                  <div className="h-6 bg-muted rounded mb-4 w-32"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map((j) => (
+                      <div key={j}>
+                        <div className="h-48 bg-muted rounded-t-lg"></div>
+                        <div className="p-4 bg-card rounded-b-lg border border-t-0">
+                          <div className="h-4 bg-muted rounded mb-2"></div>
+                          <div className="h-4 bg-muted rounded mb-2 w-3/4"></div>
+                          <div className="h-3 bg-muted rounded w-1/2"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
+          ) : categorizedNews.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground text-lg">暂无发布的文章</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredNews.map((news, index) => (
-                <div key={news.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <NewsCard {...news} />
+            <div className="space-y-12">
+              {categorizedNews.map((categoryData, categoryIndex) => (
+                <div key={categoryData.category.id} className="animate-fade-in" style={{ animationDelay: `${categoryIndex * 0.2}s` }}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: categoryData.category.color }}
+                      ></div>
+                      <h3 className="text-2xl font-bold text-foreground">{categoryData.category.name}</h3>
+                      <Badge variant="outline" className="bg-muted/50">
+                        {categoryData.articles.length} 篇文章
+                      </Badge>
+                    </div>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to={`/news?category=${categoryData.category.slug}`}>
+                        查看更多
+                        <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categoryData.articles.map((news, index) => (
+                      <div key={news.id} className="animate-fade-in" style={{ animationDelay: `${(categoryIndex * 3 + index) * 0.1}s` }}>
+                        <NewsCard {...news} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

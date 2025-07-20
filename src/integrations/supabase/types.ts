@@ -1406,6 +1406,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      update_user_password_and_clear_flag: {
+        Args: { user_id: string; new_password: string }
+        Returns: Json
+      }
+      user_must_change_password: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -121,8 +121,18 @@ const MediaManager = () => {
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        const fileName = `${Date.now()}-${file.name}`;
-        const filePath = `media/${fileName}`;
+        
+        // 清理文件名，移除特殊字符和中文字符
+        const cleanFileName = file.name
+          .replace(/[^\w\s.-]/g, '') // 移除特殊字符，保留字母、数字、空格、点和连字符
+          .replace(/\s+/g, '-') // 将空格替换为连字符
+          .replace(/[^\x00-\x7F]/g, '') // 移除非ASCII字符（包括中文）
+          .toLowerCase(); // 转为小写
+        
+        const fileExtension = cleanFileName.split('.').pop() || 'unknown';
+        const fileNameWithoutExt = cleanFileName.replace(/\.[^/.]+$/, '') || 'file';
+        const fileName = `${Date.now()}-${fileNameWithoutExt}.${fileExtension}`;
+        const filePath = fileName; // 直接使用文件名作为路径，不需要额外的media/前缀
 
         // 上传文件到 Supabase Storage
         const { error: uploadError } = await supabase.storage
@@ -176,7 +186,7 @@ const MediaManager = () => {
           .from('media')
           .insert([
             {
-              name: file.name.split('.')[0], // 文件名去掉扩展名
+              name: fileNameWithoutExt || file.name.split('.')[0], // 使用清理后的文件名
               type: fileType,
               file_name: fileName,
               file_path: filePath,

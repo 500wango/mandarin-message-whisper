@@ -12,7 +12,6 @@ import Dashboard from "./pages/Dashboard";
 import ArticleEditor from "./pages/ArticleEditor";
 import Article from "./pages/Article";
 import Prompts from "./pages/Prompts";
-import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +33,17 @@ const App = () => (
             <Route path="/article/:slug" element={<Article />} />
             <Route path="/prompts" element={<Prompts />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={
+              <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="text-center">
+                  <h1 className="text-4xl font-bold mb-4">404</h1>
+                  <p className="text-xl text-muted-foreground mb-4">页面未找到</p>
+                  <a href="/" className="text-primary hover:text-primary-glow underline">
+                    返回首页
+                  </a>
+                </div>
+              </div>
+            } />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

@@ -103,17 +103,7 @@ const Home = () => {
         categories.map(async (category) => {
           const { data: articles, error: articlesError } = await supabase
             .from('articles')
-            .select(`
-              *,
-              categories (
-                name,
-                color,
-                slug
-              ),
-              profiles (
-                display_name
-              )
-            `)
+            .select('*')
             .eq('status', 'published')
             .eq('category_id', category.id)
             .order('published_at', { ascending: false })
@@ -131,10 +121,10 @@ const Home = () => {
           const formattedArticles = articles.map((article: any) => ({
             id: article.id,
             title: article.title,
-            excerpt: article.excerpt || article.content.substring(0, 150) + '...',
-            category: article.categories?.name || category.name,
+            excerpt: article.excerpt || (article.content ? article.content.substring(0, 150) + '...' : '暂无摘要'),
+            category: category.name,
             publishDate: new Date(article.published_at).toLocaleDateString('zh-CN'),
-            readTime: `${Math.ceil(article.content.length / 300)}分钟`,
+            readTime: `${Math.ceil((article.content?.length || 0) / 300)}分钟`,
             views: article.view_count || 0,
             imageUrl: article.featured_image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop',
             slug: article.slug,

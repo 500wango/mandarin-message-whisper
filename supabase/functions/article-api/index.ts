@@ -186,12 +186,35 @@ serve(async (req) => {
 
       // 生成slug（如果没有提供）
       if (!body.slug) {
-        body.slug = body.title
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim()
+        let baseSlug = body.title
+          ? body.title
+              .toLowerCase()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-')
+              .trim()
+          : 'article'
+        
+        // 如果slug为空，使用默认值
+        if (!baseSlug) {
+          baseSlug = 'article'
+        }
+        
+        // 添加时间戳确保唯一性
+        const timestamp = Date.now()
+        body.slug = `${baseSlug}-${timestamp}`
+        
+        // 检查slug是否已存在，如果存在则添加随机数
+        const { data: existingArticle } = await supabase
+          .from('articles')
+          .select('id')
+          .eq('slug', body.slug)
+          .single()
+        
+        if (existingArticle) {
+          const randomSuffix = Math.random().toString(36).substring(2, 8)
+          body.slug = `${baseSlug}-${timestamp}-${randomSuffix}`
+        }
       }
 
       // 智能分类功能（如果没有指定分类且启用了自动分类）

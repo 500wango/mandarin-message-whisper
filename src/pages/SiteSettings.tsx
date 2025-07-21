@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Save, Image as ImageIcon, Globe, Key } from 'lucide-react';
+import { Upload, Save, Image as ImageIcon, Globe, Key, Plus, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 
 interface SiteSetting {
   setting_key: string;
@@ -25,12 +26,25 @@ interface NavigationItem {
   is_active: boolean;
 }
 
+interface ApiKey {
+  id: string;
+  name: string;
+  key: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 const SiteSettings = () => {
   const [settings, setSettings] = useState<SiteSetting[]>([]);
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [newApiKey, setNewApiKey] = useState({ name: '', key: '', description: '' });
+  const [showNewApiForm, setShowNewApiForm] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,6 +63,21 @@ const SiteSettings = () => {
 
       setSettings(settingsResponse.data || []);
       setNavigation(navigationResponse.data || []);
+
+      // 获取API密钥数据，使用更安全的方法
+      try {
+        const apiKeysResponse = await supabase
+          .from('api_keys' as any)
+          .select('*')
+          .order('created_at');
+        
+        if (!apiKeysResponse.error && apiKeysResponse.data) {
+          setApiKeys((apiKeysResponse.data as unknown) as ApiKey[]);
+        }
+      } catch (apiError) {
+        console.log('API keys table not ready yet:', apiError);
+        // API密钥表可能还没准备好，这是正常的
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -232,6 +261,102 @@ const SiteSettings = () => {
       toast({
         title: "删除失败",
         description: "删除导航项时出现错误",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addApiKey = async () => {
+    if (!newApiKey.name || !newApiKey.key) {
+      toast({
+        title: "添加失败",
+        description: "请填写API密钥名称和密钥值",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('api_keys' as any)
+        .insert({
+          name: newApiKey.name,
+          key: newApiKey.key,
+          description: newApiKey.description,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setApiKeys(prev => [...prev, (data as unknown) as ApiKey]);
+        setNewApiKey({ name: '', key: '', description: '' });
+        setShowNewApiForm(false);
+        
+        toast({
+          title: "添加成功",
+          description: "API密钥已添加",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding API key:', error);
+      toast({
+        title: "添加失败",
+        description: "添加API密钥时出现错误",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateApiKey = async (id: string, field: keyof ApiKey, value: string | boolean) => {
+    try {
+      const { error } = await supabase
+        .from('api_keys' as any)
+        .update({ [field]: value, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setApiKeys(prev => prev.map(key => 
+        key.id === id ? { ...key, [field]: value } : key
+      ));
+      
+      toast({
+        title: "更新成功",
+        description: "API密钥已更新",
+      });
+    } catch (error) {
+      console.error('Error updating API key:', error);
+      toast({
+        title: "更新失败",
+        description: "更新API密钥时出现错误",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteApiKey = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('api_keys' as any)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setApiKeys(prev => prev.filter(key => key.id !== id));
+      
+      toast({
+        title: "删除成功",
+        description: "API密钥已删除",
+      });
+    } catch (error) {
+      console.error('Error deleting API key:', error);
+      toast({
+        title: "删除失败",
+        description: "删除API密钥时出现错误",
         variant: "destructive",
       });
     }
@@ -448,15 +573,109 @@ const SiteSettings = () => {
             API密钥管理
           </CardTitle>
           <CardDescription>
-            管理用于自动化发布文章和其他功能的API密钥。注意：API密钥功能正在开发中，敬请期待。
+            管理用于自动化发布文章和其他功能的API密钥，支持OpenAI、文章采集等第三方服务
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-center text-muted-foreground py-8">
-            <Key className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>API密钥管理功能即将推出</p>
-            <p className="text-sm">将支持管理OpenAI、文章采集等第三方服务的API密钥</p>
-          </div>
+          {apiKeys.map((apiKey) => (
+            <div key={apiKey.id} className="p-4 border rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={apiKey.name}
+                      onChange={(e) => updateApiKey(apiKey.id, 'name', e.target.value)}
+                      className="font-medium max-w-xs"
+                      placeholder="API密钥名称"
+                    />
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={apiKey.is_active}
+                        onCheckedChange={(checked) => updateApiKey(apiKey.id, 'is_active', checked)}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {apiKey.is_active ? '启用' : '禁用'}
+                      </span>
+                    </div>
+                  </div>
+                  <Input
+                    type="password"
+                    value={apiKey.key}
+                    onChange={(e) => updateApiKey(apiKey.id, 'key', e.target.value)}
+                    placeholder="API密钥值"
+                    className="font-mono text-sm"
+                  />
+                  <Textarea
+                    value={apiKey.description || ''}
+                    onChange={(e) => updateApiKey(apiKey.id, 'description', e.target.value)}
+                    placeholder="描述（可选）- 如：用于OpenAI GPT API调用"
+                    rows={2}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => deleteApiKey(apiKey.id)}
+                  className="text-destructive hover:text-destructive ml-4"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                创建时间: {new Date(apiKey.created_at).toLocaleString()}
+              </div>
+            </div>
+          ))}
+
+          {showNewApiForm && (
+            <div className="p-4 border-2 border-dashed rounded-lg space-y-3">
+              <Input
+                placeholder="API密钥名称 (如: OpenAI API, 文章采集API)"
+                value={newApiKey.name}
+                onChange={(e) => setNewApiKey(prev => ({ ...prev, name: e.target.value }))}
+              />
+              <Input
+                type="password"
+                placeholder="API密钥值"
+                value={newApiKey.key}
+                onChange={(e) => setNewApiKey(prev => ({ ...prev, key: e.target.value }))}
+                className="font-mono text-sm"
+              />
+              <Textarea
+                placeholder="描述（可选）- 说明此API密钥的用途"
+                value={newApiKey.description}
+                onChange={(e) => setNewApiKey(prev => ({ ...prev, description: e.target.value }))}
+                rows={2}
+              />
+              <div className="flex gap-2">
+                <Button onClick={addApiKey} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  保存
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setShowNewApiForm(false);
+                    setNewApiKey({ name: '', key: '', description: '' });
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          <Separator />
+          
+          <Button 
+            variant="outline" 
+            onClick={() => setShowNewApiForm(true)}
+            disabled={showNewApiForm}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            添加API密钥
+          </Button>
         </CardContent>
       </Card>
     </div>

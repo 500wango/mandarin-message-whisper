@@ -22,7 +22,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/admin/dashboard');
     }
   }, [user, navigate]);
 
@@ -77,18 +77,18 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            新闻管理系统
+            管理员登录
           </h1>
           <p className="text-muted-foreground mt-2">
-            登录或注册以开始使用
+            请使用管理员账户登录后台管理系统
           </p>
         </div>
 
         <Card className="border-border/40 bg-gradient-secondary backdrop-blur">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">欢迎</CardTitle>
+            <CardTitle className="text-2xl">管理后台</CardTitle>
             <CardDescription>
-              选择登录或注册来访问您的账户
+              管理员登录或注册账户
             </CardDescription>
           </CardHeader>
           <CardContent>

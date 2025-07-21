@@ -28,7 +28,9 @@ import {
   Image,
   Globe,
   Tag,
-  Settings
+  Settings,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,6 +40,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Article {
   id: string;
@@ -90,6 +93,8 @@ const Dashboard = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
+  const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -304,6 +309,67 @@ const Dashboard = () => {
       fetchArticles();
     }
   };
+
+  // 批量删除功能
+  const handleBatchDelete = async () => {
+    if (selectedArticles.length === 0) return;
+    
+    if (!confirm(`确定要删除选中的 ${selectedArticles.length} 篇文章吗？此操作不可恢复。`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .in('id', selectedArticles);
+
+      if (error) throw error;
+
+      toast({
+        title: "批量删除成功",
+        description: `已删除 ${selectedArticles.length} 篇文章`,
+      });
+      
+      setSelectedArticles([]);
+      fetchArticles();
+    } catch (error: any) {
+      toast({
+        title: "批量删除失败",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectedArticles.length === filteredArticles.length) {
+      setSelectedArticles([]);
+    } else {
+      setSelectedArticles(filteredArticles.map(article => article.id));
+    }
+  };
+
+  // 单个选择/取消选择
+  const handleSelectArticle = (articleId: string) => {
+    setSelectedArticles(prev => {
+      if (prev.includes(articleId)) {
+        return prev.filter(id => id !== articleId);
+      } else {
+        return [...prev, articleId];
+      }
+    });
+  };
+
+  // 清除选择（当筛选改变时）
+  useEffect(() => {
+    setSelectedArticles([]);
+  }, [selectedCategory]);
 
   const handleUpdateUserRole = async (userId: string, newRole: string) => {
     const { error } = await supabase
@@ -584,72 +650,143 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* 批量操作工具栏 */}
+                    {profile?.role === 'admin' && filteredArticles.length > 0 && (
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              checked={selectedArticles.length === filteredArticles.length && filteredArticles.length > 0}
+                              onCheckedChange={handleSelectAll}
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                            <span className="text-sm font-medium">
+                              {selectedArticles.length === filteredArticles.length && filteredArticles.length > 0 
+                                ? '取消全选' 
+                                : '全选'
+                              }
+                            </span>
+                          </div>
+                          {selectedArticles.length > 0 && (
+                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                              <span>已选择 {selectedArticles.length} 篇文章</span>
+                            </div>
+                          )}
+                        </div>
+                        {selectedArticles.length > 0 && (
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedArticles([])}
+                            >
+                              取消选择
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={handleBatchDelete}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
+                                  删除中...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  批量删除
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* 文章列表 */}
                     {filteredArticles.map((article) => (
                       <div
                         key={article.id}
-                        className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors"
+                        className={`flex items-center p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors ${
+                          selectedArticles.includes(article.id) ? 'bg-primary/5 border-primary/30' : ''
+                        }`}
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="font-medium truncate">{article.title}</h3>
-                            {getStatusBadge(article.status)}
-                            {article.categories && (
-                              <Badge 
-                                variant="outline" 
-                                style={{ 
-                                  borderColor: article.categories.color + '50', 
-                                  color: article.categories.color 
-                                }}
-                              >
-                                {article.categories.name}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate mb-2">
-                            {article.excerpt}
-                          </p>
-                          <div className="flex items-center text-xs text-muted-foreground space-x-4">
-                            <span className="flex items-center">
-                              <Calendar className="mr-1 h-3 w-3" />
-                              {formatDate(article.updated_at)}
-                            </span>
-                            <span className="flex items-center">
-                              <Eye className="mr-1 h-3 w-3" />
-                              {article.view_count} 浏览
-                            </span>
-                          </div>
-                        </div>
-                        
+                        {/* 选择框 - 只对管理员显示 */}
                         {profile?.role === 'admin' && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => navigate(`/dashboard/editor/${article.id}`)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                编辑
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => window.open(`/article/${article.slug}`, '_blank')}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                预览
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteArticle(article.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                删除
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="mr-4">
+                            <Checkbox
+                              checked={selectedArticles.includes(article.id)}
+                              onCheckedChange={() => handleSelectArticle(article.id)}
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                          </div>
                         )}
+                        
+                        <div className="flex-1 min-w-0 flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="font-medium truncate">{article.title}</h3>
+                              {getStatusBadge(article.status)}
+                              {article.categories && (
+                                <Badge 
+                                  variant="outline" 
+                                  style={{ 
+                                    borderColor: article.categories.color + '50', 
+                                    color: article.categories.color 
+                                  }}
+                                >
+                                  {article.categories.name}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate mb-2">
+                              {article.excerpt}
+                            </p>
+                            <div className="flex items-center text-xs text-muted-foreground space-x-4">
+                              <span className="flex items-center">
+                                <Calendar className="mr-1 h-3 w-3" />
+                                {formatDate(article.updated_at)}
+                              </span>
+                              <span className="flex items-center">
+                                <Eye className="mr-1 h-3 w-3" />
+                                {article.view_count} 浏览
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {profile?.role === 'admin' && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => navigate(`/dashboard/editor/${article.id}`)}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  编辑
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => window.open(`/article/${article.slug}`, '_blank')}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  预览
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteArticle(article.id)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  删除
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

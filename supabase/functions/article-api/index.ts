@@ -152,13 +152,31 @@ serve(async (req) => {
 
     // POST /article-api - 创建新文章
     if (req.method === 'POST') {
-      const body = await req.json()
-      console.log('Creating article with data:', body)
+      let body;
+      try {
+        const requestText = await req.text()
+        console.log('Raw request body:', requestText)
+        
+        body = JSON.parse(requestText)
+        console.log('Parsed body:', JSON.stringify(body, null, 2))
+        console.log('Body type:', typeof body)
+        console.log('Body title:', body.title, 'type:', typeof body.title)
+        console.log('Body content:', body.content ? 'has content' : 'no content')
 
-      // 验证必需字段
-      if (!body.title || !body.content) {
+        // 验证必需字段
+        if (!body.title || !body.content) {
+          return new Response(
+            JSON.stringify({ error: 'Title and content are required' }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          )
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
         return new Response(
-          JSON.stringify({ error: 'Title and content are required' }),
+          JSON.stringify({ error: 'Invalid JSON in request body' }),
           { 
             status: 400, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

@@ -63,9 +63,9 @@ const Article = () => {
             email
           )
         `)
-        .eq('slug', slug)
+        .or(`slug.eq.${slug},id.eq.${slug}`)
         .eq('status', 'published')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

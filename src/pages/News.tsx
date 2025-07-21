@@ -39,13 +39,10 @@ const News = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 获取分类
-      const { data: categoriesData } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
+      // 不再需要获取所有分类，因为只显示AI新闻分类
+      const categoriesData = [{ id: 'ai-news', name: 'AI新闻', slug: 'news', color: '#06B6D4' }];
 
-      // 获取已发布的文章
+      // 获取"AI新闻"分类的文章
       const { data: articlesData } = await supabase
         .from('articles')
         .select(`
@@ -65,6 +62,7 @@ const News = () => {
           )
         `)
         .eq('status', 'published')
+        .eq('categories.name', 'AI新闻')
         .order('published_at', { ascending: false });
 
       setCategories(categoriesData || []);
@@ -84,14 +82,11 @@ const News = () => {
   };
 
 
-  const allCategories = ['全部', ...categories.map(cat => cat.name)];
-
+  // 只保留搜索功能，不需要分类筛选，因为只显示AI新闻
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (article.excerpt && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = selectedCategory === '全部' || 
-                           (article.category && article.category.name === selectedCategory);
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   const formatDate = (dateString: string) => {
@@ -157,23 +152,6 @@ const News = () => {
               />
             </div>
 
-            {/* Category Filters */}
-            <div className="flex flex-wrap gap-2">
-              {allCategories.map((category) => (
-                <Badge
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    selectedCategory === category
-                      ? 'bg-primary text-primary-foreground shadow-neon'
-                      : 'border-border/40 hover:border-primary hover:bg-primary/10'
-                  }`}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category}
-                </Badge>
-              ))}
-            </div>
           </div>
 
           {/* News Grid */}
@@ -217,13 +195,10 @@ const News = () => {
               </div>
               <Button 
                 variant="outline"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('全部');
-                }}
+                onClick={() => setSearchQuery('')}
                 className="border-primary/20 hover:border-primary"
               >
-                清除筛选条件
+                清除搜索条件
               </Button>
             </div>
           )}

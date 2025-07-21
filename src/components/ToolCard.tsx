@@ -1,7 +1,7 @@
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Star, ExternalLink, Users, Zap } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Star, Users, ExternalLink } from "lucide-react";
 
 interface ToolCardProps {
   id: string;
@@ -17,7 +17,6 @@ interface ToolCardProps {
 }
 
 export const ToolCard = ({
-  id,
   name,
   description,
   category,
@@ -28,107 +27,93 @@ export const ToolCard = ({
   websiteUrl,
   features
 }: ToolCardProps) => {
-  const getPricingColor = (pricing: string) => {
+  const getPricingColor = (pricing: string): string => {
     switch (pricing) {
       case 'Free':
-        return 'bg-green-500/10 text-green-400 border-green-500/20';
+        return 'text-green-600 border-green-200 bg-green-50';
       case 'Freemium':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+        return 'text-blue-600 border-blue-200 bg-blue-50';
       case 'Paid':
-        return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+        return 'text-orange-600 border-orange-200 bg-orange-50';
       default:
-        return 'bg-muted text-muted-foreground';
+        return 'text-gray-600 border-gray-200 bg-gray-50';
     }
   };
 
   return (
-    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-card-hover hover:scale-[1.02] border-border/40 bg-gradient-secondary backdrop-blur">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-lg bg-muted/50 flex items-center justify-center overflow-hidden">
-              <img
-                src={logoUrl}
-                alt={name}
-                className="w-10 h-10 object-cover"
-              />
-            </div>
+    <Card className="group h-full overflow-hidden border-border/40 bg-card/50 backdrop-blur-sm hover:shadow-lg hover:border-primary/40 transition-all duration-300">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <img 
+              src={logoUrl} 
+              alt={`${name} logo`}
+              className="w-12 h-12 rounded-lg object-cover border border-border/20"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=48&h=48&fit=crop';
+              }}
+            />
             <div>
-              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors duration-200">
+              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
                 {name}
               </h3>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="secondary" className="text-xs">
                 {category}
               </Badge>
             </div>
           </div>
-          
-          <Badge className={`${getPricingColor(pricing)} text-xs`}>
+          <Badge 
+            variant="outline" 
+            className={`text-xs ${getPricingColor(pricing)}`}
+          >
             {pricing}
           </Badge>
         </div>
-
-        {/* Description */}
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
+      </CardHeader>
+      
+      <CardContent className="pb-4">
+        <p className="text-muted-foreground text-sm line-clamp-3 mb-4">
           {description}
         </p>
-
-        {/* Features */}
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2">
-            {features.slice(0, 3).map((feature, index) => (
-              <Badge
-                key={index}
-                variant="secondary"
-                className="text-xs bg-muted/50 hover:bg-muted transition-colors duration-200"
-              >
-                {feature}
-              </Badge>
-            ))}
-            {features.length > 3 && (
-              <Badge variant="secondary" className="text-xs bg-muted/50">
-                +{features.length - 3}
-              </Badge>
-            )}
+        
+        {features.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">主要功能:</h4>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              {features.slice(0, 3).map((feature, index) => (
+                <li key={index} className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-primary rounded-full" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+      
+      <CardFooter className="pt-0 flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+            <span>{rating}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            <span>{users}</span>
           </div>
         </div>
-
-        {/* Stats */}
-        <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{rating}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Users className="h-4 w-4" />
-              <span>{users}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex space-x-2">
-          <Button
-            size="sm"
-            className="flex-1 bg-primary hover:bg-primary-glow transition-all duration-200 hover:shadow-neon"
-            asChild
-          >
-            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              访问工具
-            </a>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-primary/20 hover:border-primary hover:text-primary transition-all duration-200"
-          >
-            <Zap className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+        
+        <Button 
+          size="sm" 
+          variant="ghost"
+          className="h-8 px-3 text-primary hover:text-primary hover:bg-primary/10"
+          onClick={() => window.open(websiteUrl, '_blank')}
+        >
+          <span className="mr-1">访问</span>
+          <ExternalLink className="h-3 w-3" />
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

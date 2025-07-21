@@ -30,6 +30,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let logId: string | null = null;
+
   try {
     console.log('Starting FutureTools.io scraping...');
     
@@ -38,6 +41,19 @@ serve(async (req) => {
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 创建初始日志记录
+    const { data: logData } = await supabase
+      .from('scraper_logs')
+      .insert({
+        status: 'running',
+        tools_scraped: 0,
+        tools_published: 0
+      })
+      .select()
+      .single();
+    
+    logId = logData?.id;
 
     // 1. 抓取FutureTools.io的工具
     const tools = await scrapeFutureTools();
@@ -62,13 +78,29 @@ serve(async (req) => {
     const published = await publishTools(translatedTools, aiToolsCategory.id, supabase);
     console.log(`Published ${published} tools to website`);
 
+    const executionTime = Date.now() - startTime;
+
+    // 更新日志记录为成功状态
+    if (logId) {
+      await supabase
+        .from('scraper_logs')
+        .update({
+          status: 'success',
+          tools_scraped: tools.length,
+          tools_published: published,
+          execution_time_ms: executionTime
+        })
+        .eq('id', logId);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `成功抓取并发布了 ${published} 个AI工具`,
         scraped: tools.length,
         translated: translatedTools.length,
-        published
+        published,
+        executionTime
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -77,6 +109,25 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in futuretools-scraper:', error);
+    
+    const executionTime = Date.now() - startTime;
+
+    // 更新日志记录为错误状态
+    if (logId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      await supabase
+        .from('scraper_logs')
+        .update({
+          status: 'error',
+          error_message: error.message,
+          execution_time_ms: executionTime
+        })
+        .eq('id', logId);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false, 

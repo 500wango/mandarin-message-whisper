@@ -13,6 +13,7 @@ import ArticleEditor from "./pages/ArticleEditor";
 import Article from "./pages/Article";
 import Prompts from "./pages/Prompts";
 import MediaManager from "./pages/MediaManager";
+import ScraperManager from "./pages/ScraperManager";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/admin/dashboard/editor/:id" element={<ArticleEditor />} />
             <Route path="/dashboard/editor/:id" element={<ArticleEditor />} />
             <Route path="/admin/dashboard/media" element={<MediaManager />} />
+            <Route path="/admin/dashboard/scraper" element={<ScraperManager />} />
             <Route path="/admin/dashboard/page-editor/:pageKey" element={<PageEditor />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={

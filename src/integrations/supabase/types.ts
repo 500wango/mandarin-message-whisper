@@ -1021,6 +1021,36 @@ export type Database = {
           },
         ]
       }
+      scraper_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          status: string
+          tools_published: number | null
+          tools_scraped: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          status: string
+          tools_published?: number | null
+          tools_scraped?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          status?: string
+          tools_published?: number | null
+          tools_scraped?: number | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           key: string

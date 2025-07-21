@@ -1,6 +1,8 @@
-import { NewsCard } from '@/components/NewsCard';
+import { ArticleToolCard } from '@/components/ArticleToolCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
@@ -142,21 +144,21 @@ const Tools = () => {
             </div>
           </div>
 
-          {/* Articles Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Tools Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredArticles.map((article, index) => (
               <div key={article.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <NewsCard 
+                <ArticleToolCard 
                   id={article.id}
                   title={article.title}
                   excerpt={article.excerpt || ''}
-                  category={article.category?.name || '未分类'}
-                  publishDate={formatDate(article.published_at)}
-                  readTime={calculateReadTime(article.excerpt || '')}
-                  views={article.view_count}
-                  imageUrl={article.featured_image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop'}
+                  imageUrl={article.featured_image_url || 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=200&fit=crop'}
+                  publishedAt={article.published_at}
                   slug={article.slug}
-                  featured={index === 0}
+                  category={article.category?.name || 'AI工具'}
+                  categoryColor={article.category?.color || '#8B5CF6'}
+                  viewCount={article.view_count}
+                  readTime={calculateReadTime(article.excerpt || '')}
                 />
               </div>
             ))}

@@ -132,7 +132,7 @@
         },
         "sendBody": true,
         "contentType": "json",
-        "body": "={\"title\": $json.title, \"slug\": $json.slug, \"content\": $json.content, \"excerpt\": $json.excerpt, \"meta_title\": $json.meta_title, \"meta_description\": $json.meta_description, \"featured_image_url\": $json.featured_image_url, \"status\": $json.status, \"category_id\": $json.category_id, \"auto_categorize\": true}",
+        "body": "{\n  \"title\": \"{{ $json.title }}\",\n  \"slug\": \"{{ $json.slug }}\",\n  \"content\": \"{{ $json.content }}\",\n  \"excerpt\": \"{{ $json.excerpt }}\",\n  \"meta_title\": \"{{ $json.meta_title }}\",\n  \"meta_description\": \"{{ $json.meta_description }}\",\n  \"featured_image_url\": \"{{ $json.featured_image_url }}\",\n  \"status\": \"{{ $json.status }}\",\n  \"category_id\": \"{{ $json.category_id }}\",\n  \"auto_categorize\": true\n}",
         "options": {}
       },
       "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",

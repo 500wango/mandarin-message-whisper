@@ -8,14 +8,30 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Send, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Send, Eye, ImageIcon, Grid } from 'lucide-react';
 
 interface Category {
   id: string;
   name: string;
   color: string;
+}
+
+interface MediaFile {
+  id: string;
+  name: string;
+  type: 'image' | 'video';
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  width?: number;
+  height?: number;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ArticleData {
@@ -39,6 +55,8 @@ const ArticleEditor = () => {
 
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [articleData, setArticleData] = useState<ArticleData>({
     title: '',
     slug: '',
@@ -58,6 +76,7 @@ const ArticleEditor = () => {
     }
     
     fetchCategories();
+    fetchMediaFiles();
     
     if (isEditing) {
       fetchArticle();
@@ -74,6 +93,28 @@ const ArticleEditor = () => {
       console.error('Error fetching categories:', error);
     } else {
       setCategories(data || []);
+    }
+  };
+
+  const fetchMediaFiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('media')
+        .select('*')
+        .eq('type', 'image')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // 类型转换以符合 MediaFile 接口
+      const typedData: MediaFile[] = (data || []).map(item => ({
+        ...item,
+        type: item.type as 'image' | 'video'
+      }));
+      
+      setMediaFiles(typedData);
+    } catch (error: any) {
+      console.error('Error fetching media files:', error);
     }
   };
 
@@ -128,6 +169,46 @@ const ArticleEditor = () => {
       slug: !isEditing ? generateSlug(title) : prev.slug,
       meta_title: !prev.meta_title ? title : prev.meta_title
     }));
+  };
+
+  const insertImageAtCursor = (imageUrl: string, altText: string) => {
+    const textarea = document.getElementById('content') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const cursorPosition = textarea.selectionStart;
+    const textBefore = articleData.content.substring(0, cursorPosition);
+    const textAfter = articleData.content.substring(cursorPosition);
+    const imageMarkdown = `![${altText}](${imageUrl})`;
+    
+    const newContent = textBefore + imageMarkdown + textAfter;
+    setArticleData(prev => ({ ...prev, content: newContent }));
+    
+    // 重新定位光标到插入的图片之后
+    setTimeout(() => {
+      const newCursorPosition = cursorPosition + imageMarkdown.length;
+      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+      textarea.focus();
+    }, 0);
+  };
+
+  const getFileUrl = (file: MediaFile) => {
+    const { data: { publicUrl } } = supabase.storage
+      .from('media')
+      .getPublicUrl(file.file_path);
+    return publicUrl;
+  };
+
+  const handleImageSelect = (file: MediaFile) => {
+    const imageUrl = getFileUrl(file);
+    insertImageAtCursor(imageUrl, file.name);
+    setImageDialogOpen(false);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 B';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   };
 
   const handleSave = async (status: 'draft' | 'published' = 'draft') => {
@@ -320,7 +401,57 @@ const ArticleEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="content">正文 *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="content">正文 *</Label>
+                    <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          插入图片
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl">
+                        <DialogHeader>
+                          <DialogTitle>选择图片</DialogTitle>
+                        </DialogHeader>
+                        <div className="max-h-96 overflow-y-auto">
+                          {mediaFiles.length === 0 ? (
+                            <div className="text-center py-8">
+                              <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                              <p className="text-muted-foreground">暂无图片文件</p>
+                              <p className="text-sm text-muted-foreground mt-2">
+                                请先到媒体管理上传图片
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                              {mediaFiles.map((file) => (
+                                <div
+                                  key={file.id}
+                                  className="border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
+                                  onClick={() => handleImageSelect(file)}
+                                >
+                                  <div className="aspect-square bg-muted">
+                                    <img
+                                      src={getFileUrl(file)}
+                                      alt={file.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="p-2">
+                                    <p className="text-sm font-medium truncate">{file.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {file.width}×{file.height} • {formatFileSize(file.file_size)}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <Textarea
                     id="content"
                     value={articleData.content}
@@ -330,7 +461,7 @@ const ArticleEditor = () => {
                     className="font-mono"
                   />
                   <p className="text-xs text-muted-foreground">
-                    支持Markdown格式
+                    支持Markdown格式，点击"插入图片"按钮可以从媒体库选择图片
                   </p>
                 </div>
               </CardContent>

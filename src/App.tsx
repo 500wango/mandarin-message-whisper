@@ -32,18 +32,21 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/news" element={<News />} />
             <Route path="/tools" element={<Tools />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/editor" element={<ArticleEditor />} />
-            <Route path="/dashboard/editor/:id" element={<ArticleEditor />} />
-            <Route path="/dashboard/media" element={<MediaManager />} />
-            <Route path="/dashboard/page-editor/:pageKey" element={<PageEditor />} />
             <Route path="/article/:slug" element={<Article />} />
             <Route path="/prompts" element={<Prompts />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            
+            {/* Admin routes */}
+            <Route path="/admin" element={<Auth />} />
+            <Route path="/admin/auth" element={<Auth />} />
+            <Route path="/admin/dashboard" element={<Dashboard />} />
+            <Route path="/admin/dashboard/editor" element={<ArticleEditor />} />
+            <Route path="/admin/dashboard/editor/:id" element={<ArticleEditor />} />
+            <Route path="/admin/dashboard/media" element={<MediaManager />} />
+            <Route path="/admin/dashboard/page-editor/:pageKey" element={<PageEditor />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={
               <div className="min-h-screen flex items-center justify-center bg-background">

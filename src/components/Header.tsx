@@ -126,11 +126,11 @@ export const Header = () => {
           })}
         </nav>
 
-        {/* Auth Section */}
+        {/* Auth Section - Only show for authenticated users */}
         <div className="hidden md:flex items-center space-x-4">
-          {user ? (
+          {user && (
             <>
-              <Link to="/dashboard">
+              <Link to="/admin/dashboard">
                 <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary hover:shadow-neon transition-all duration-300">
                   <User className="mr-2 h-4 w-4" />
                   管理面板
@@ -145,13 +145,6 @@ export const Header = () => {
                 退出
               </Button>
             </>
-          ) : (
-            <Link to="/auth">
-              <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary hover:shadow-neon transition-all duration-300">
-                <LogIn className="mr-2 h-4 w-4" />
-                登录
-              </Button>
-            </Link>
           )}
         </div>
 
@@ -188,36 +181,27 @@ export const Header = () => {
                 </Link>
               );
             })}
-            <div className="pt-4 pb-2 space-y-2">
-              {user ? (
-                <>
-                  <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="outline" size="sm" className="w-full border-primary/20 hover:border-primary">
-                      <User className="mr-2 h-4 w-4" />
-                      管理面板
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      signOut();
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    退出登录
-                  </Button>
-                </>
-              ) : (
-                <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+            {user && (
+              <div className="pt-4 pb-2 space-y-2">
+                <Link to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full border-primary/20 hover:border-primary">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    登录
+                    <User className="mr-2 h-4 w-4" />
+                    管理面板
                   </Button>
                 </Link>
-              )}
-            </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    signOut();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  退出登录
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

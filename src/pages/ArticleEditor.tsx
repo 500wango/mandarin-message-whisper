@@ -53,7 +53,7 @@ const ArticleEditor = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth');
+      navigate('/admin/auth');
       return;
     }
     
@@ -94,7 +94,7 @@ const ArticleEditor = () => {
         description: error.message,
         variant: "destructive",
       });
-      navigate('/dashboard');
+      navigate('/admin/dashboard');
     } else {
       setArticleData({
         title: data.title || '',
@@ -184,7 +184,7 @@ const ArticleEditor = () => {
         });
       }
 
-      navigate('/dashboard');
+      navigate('/admin/dashboard');
     } catch (error: any) {
       toast({
         title: "操作失败",
@@ -226,7 +226,7 @@ const ArticleEditor = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+              <Button variant="ghost" onClick={() => navigate('/admin/dashboard')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 返回
               </Button>

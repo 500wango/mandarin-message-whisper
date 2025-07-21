@@ -55,20 +55,16 @@ serve(async (req) => {
 
     // 验证API密钥（如果提供）
     if (apiKey) {
-      const validApiKey = Deno.env.get('ARTICLE_API_KEY')
-      if (!validApiKey) {
-        console.log('Article API key not configured')
-        return new Response(
-          JSON.stringify({ error: 'API key authentication not configured' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
-      }
-      
-      if (apiKey !== validApiKey) {
-        console.log('Invalid API key provided')
+      // 检查数据库中的API密钥
+      const { data: apiKeyData, error: apiKeyError } = await supabase
+        .from('api_keys')
+        .select('id, name')
+        .eq('key', apiKey)
+        .eq('is_active', true)
+        .single()
+
+      if (apiKeyError || !apiKeyData) {
+        console.log('Invalid API key provided:', apiKey)
         return new Response(
           JSON.stringify({ error: 'Invalid API key' }),
           { 
@@ -77,6 +73,8 @@ serve(async (req) => {
           }
         )
       }
+      
+      console.log('API key authenticated:', apiKeyData.name)
     }
 
     // GET /article-api - 获取文章列表

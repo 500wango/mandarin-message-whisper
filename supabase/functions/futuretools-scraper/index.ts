@@ -315,32 +315,20 @@ async function translateTools(tools: AITool[], apiKey: string): Promise<Translat
 async function publishTools(tools: TranslatedTool[], categoryId: string, supabase: any): Promise<number> {
   let published = 0;
 
-  // 先确保系统用户profile存在
-  const systemUserId = '00000000-0000-0000-0000-000000000000';
-  
-  const { data: systemProfile } = await supabase
+  // 获取管理员用户ID
+  const { data: adminUser } = await supabase
     .from('profiles')
     .select('id')
-    .eq('id', systemUserId)
-    .maybeSingle();
+    .eq('role', 'admin')
+    .limit(1)
+    .single();
 
-  if (!systemProfile) {
-    // 创建系统用户profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: systemUserId,
-        email: 'system@ai-tools.com',
-        display_name: '系统自动抓取',
-        role: 'admin'
-      });
-
-    if (profileError) {
-      console.error('Error creating system profile:', profileError);
-      throw new Error('无法创建系统用户profile，停止发布');
-    }
-    console.log('Created system user profile');
+  if (!adminUser) {
+    throw new Error('没有找到管理员用户，无法发布文章');
   }
+
+  const authorId = adminUser.id;
+  console.log(`Using admin user ${authorId} to publish articles`);
 
   for (const tool of tools) {
     try {
@@ -393,7 +381,7 @@ ${tool.description}
           status: 'published',
           category_id: categoryId,
           featured_image_url: tool.imageUrl,
-          author_id: systemUserId,
+          author_id: authorId,
           published_at: new Date().toISOString(),
           meta_title: tool.title,
           meta_description: tool.description.substring(0, 160)

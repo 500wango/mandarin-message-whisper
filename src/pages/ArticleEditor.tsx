@@ -245,6 +245,30 @@ const ArticleEditor = () => {
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   };
 
+  const extractFirstImageAsCover = () => {
+    // 从文章内容中提取第一张图片URL
+    const imageRegex = /!\[.*?\]\((.*?)\)/;
+    const match = articleData.content.match(imageRegex);
+    
+    if (match && match[1]) {
+      const imageUrl = match[1];
+      setArticleData(prev => ({ 
+        ...prev, 
+        featured_image_url: imageUrl 
+      }));
+      toast({
+        title: "提取成功",
+        description: "已将文章中的第一张图片设为封面",
+      });
+    } else {
+      toast({
+        title: "未找到图片",
+        description: "文章内容中没有找到图片，请先插入图片",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSave = async (status: 'draft' | 'published' = 'draft') => {
     if (!articleData.title.trim()) {
       toast({
@@ -591,13 +615,36 @@ const ArticleEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="featured_image">特色图片URL</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="featured_image">特色图片</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={extractFirstImageAsCover}
+                      className="text-xs"
+                    >
+                      使用首图
+                    </Button>
+                  </div>
                   <Input
                     id="featured_image"
                     value={articleData.featured_image_url}
                     onChange={(e) => setArticleData(prev => ({ ...prev, featured_image_url: e.target.value }))}
-                    placeholder="https://..."
+                    placeholder="https://... 或点击'使用首图'自动提取"
                   />
+                  {articleData.featured_image_url && (
+                    <div className="mt-2">
+                      <img 
+                        src={articleData.featured_image_url} 
+                        alt="特色图片预览" 
+                        className="w-full max-w-sm h-32 object-cover rounded border"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

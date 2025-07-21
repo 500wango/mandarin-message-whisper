@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Clock, Eye, User, Calendar } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { marked } from 'marked';
 
 interface Article {
   id: string;
@@ -120,11 +121,14 @@ const Article = () => {
   };
 
   const formatContent = (content: string) => {
-    // 简单的 Markdown 转换（可以后续使用专门的 Markdown 库）
-    return content
-      .replace(/\n/g, '<br>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // 配置 marked 选项
+    marked.setOptions({
+      breaks: true, // 支持换行
+      gfm: true, // 支持 GitHub Flavored Markdown
+    });
+
+    // 使用 marked 解析 Markdown 并返回 HTML
+    return marked(content);
   };
 
   if (loading) {
@@ -247,7 +251,7 @@ const Article = () => {
             <Card className="border-border/40">
               <CardContent className="p-8">
                 <div 
-                  className="prose prose-lg max-w-none text-foreground"
+                  className="prose prose-lg max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-em:text-foreground prose-blockquote:text-muted-foreground prose-code:text-foreground prose-pre:bg-muted prose-a:text-primary hover:prose-a:text-primary/80"
                   dangerouslySetInnerHTML={{ 
                     __html: formatContent(article.content) 
                   }}

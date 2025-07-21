@@ -154,12 +154,20 @@ const ArticleEditor = () => {
   };
 
   const generateSlug = (title: string) => {
-    return title
+    if (!title.trim()) {
+      // 如果标题为空，生成随机slug
+      return 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    const slug = title
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
+    
+    // 如果生成的slug为空，使用随机值
+    return slug || 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   };
 
   const handleTitleChange = (title: string) => {

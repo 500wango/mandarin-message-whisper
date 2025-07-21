@@ -315,6 +315,33 @@ async function translateTools(tools: AITool[], apiKey: string): Promise<Translat
 async function publishTools(tools: TranslatedTool[], categoryId: string, supabase: any): Promise<number> {
   let published = 0;
 
+  // 先确保系统用户profile存在
+  const systemUserId = '00000000-0000-0000-0000-000000000000';
+  
+  const { data: systemProfile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', systemUserId)
+    .maybeSingle();
+
+  if (!systemProfile) {
+    // 创建系统用户profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: systemUserId,
+        email: 'system@ai-tools.com',
+        display_name: '系统自动抓取',
+        role: 'admin'
+      });
+
+    if (profileError) {
+      console.error('Error creating system profile:', profileError);
+      throw new Error('无法创建系统用户profile，停止发布');
+    }
+    console.log('Created system user profile');
+  }
+
   for (const tool of tools) {
     try {
       // 生成唯一的slug
@@ -366,7 +393,7 @@ ${tool.description}
           status: 'published',
           category_id: categoryId,
           featured_image_url: tool.imageUrl,
-          author_id: '00000000-0000-0000-0000-000000000000', // 系统用户ID
+          author_id: systemUserId,
           published_at: new Date().toISOString(),
           meta_title: tool.title,
           meta_description: tool.description.substring(0, 160)

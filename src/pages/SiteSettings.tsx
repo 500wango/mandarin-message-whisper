@@ -43,7 +43,7 @@ const SiteSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [newApiKey, setNewApiKey] = useState({ name: '', key: '', description: '' });
+  const [newApiKey, setNewApiKey] = useState({ name: '', description: '' });
   const [showNewApiForm, setShowNewApiForm] = useState(false);
   const { toast } = useToast();
 
@@ -267,21 +267,33 @@ const SiteSettings = () => {
   };
 
   const addApiKey = async () => {
-    if (!newApiKey.name || !newApiKey.key) {
+    if (!newApiKey.name) {
       toast({
-        title: "添加失败",
-        description: "请填写API密钥名称和密钥值",
+        title: "生成失败",
+        description: "请填写API密钥名称",
         variant: "destructive",
       });
       return;
     }
 
     try {
+      // 生成随机API密钥
+      const generateApiKey = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = 'sk-';
+        for (let i = 0; i < 48; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      };
+
+      const generatedKey = generateApiKey();
+
       const { data, error } = await supabase
         .from('api_keys' as any)
         .insert({
           name: newApiKey.name,
-          key: newApiKey.key,
+          key: generatedKey,
           description: newApiKey.description,
           is_active: true
         })
@@ -292,19 +304,19 @@ const SiteSettings = () => {
       
       if (data) {
         setApiKeys(prev => [...prev, (data as unknown) as ApiKey]);
-        setNewApiKey({ name: '', key: '', description: '' });
+        setNewApiKey({ name: '', description: '' });
         setShowNewApiForm(false);
         
         toast({
-          title: "添加成功",
-          description: "API密钥已添加",
+          title: "生成成功",
+          description: "API密钥已生成，请妥善保管",
         });
       }
     } catch (error) {
       console.error('Error adding API key:', error);
       toast({
-        title: "添加失败",
-        description: "添加API密钥时出现错误",
+        title: "生成失败",
+        description: "生成API密钥时出现错误",
         variant: "destructive",
       });
     }
@@ -565,18 +577,28 @@ const SiteSettings = () => {
         </CardContent>
       </Card>
 
-      {/* API密钥管理 */}
+      {/* API接口管理 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
-            API密钥管理
+            API接口管理
           </CardTitle>
           <CardDescription>
-            管理用于自动化发布文章和其他功能的API密钥，支持OpenAI、文章采集等第三方服务
+            为n8n工作流生成API密钥，用于自动化创建和发布文章。生成的API密钥可以在外部工作流中使用。
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* API端点信息 */}
+          <div className="p-4 bg-muted/50 rounded-lg">
+            <h4 className="font-medium mb-2">API端点地址</h4>
+            <div className="space-y-1 text-sm font-mono">
+              <div><strong>文章API:</strong> https://dembuvipwnfolksvqygl.supabase.co/functions/v1/article-api</div>
+              <div><strong>分类API:</strong> https://dembuvipwnfolksvqygl.supabase.co/functions/v1/categories-api</div>
+            </div>
+          </div>
+
+          {/* API密钥列表 */}
           {apiKeys.map((apiKey) => (
             <div key={apiKey.id} className="p-4 border rounded-lg space-y-3">
               <div className="flex items-center justify-between">
@@ -586,7 +608,7 @@ const SiteSettings = () => {
                       value={apiKey.name}
                       onChange={(e) => updateApiKey(apiKey.id, 'name', e.target.value)}
                       className="font-medium max-w-xs"
-                      placeholder="API密钥名称"
+                      placeholder="API密钥名称 (如: n8n工作流)"
                     />
                     <div className="flex items-center space-x-2">
                       <Switch
@@ -598,17 +620,29 @@ const SiteSettings = () => {
                       </span>
                     </div>
                   </div>
-                  <Input
-                    type="password"
-                    value={apiKey.key}
-                    onChange={(e) => updateApiKey(apiKey.id, 'key', e.target.value)}
-                    placeholder="API密钥值"
-                    className="font-mono text-sm"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="password"
+                      value={apiKey.key}
+                      readOnly
+                      className="font-mono text-sm bg-muted"
+                      placeholder="生成的API密钥"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(apiKey.key);
+                        toast({ title: "已复制", description: "API密钥已复制到剪贴板" });
+                      }}
+                    >
+                      复制
+                    </Button>
+                  </div>
                   <Textarea
                     value={apiKey.description || ''}
                     onChange={(e) => updateApiKey(apiKey.id, 'description', e.target.value)}
-                    placeholder="描述（可选）- 如：用于OpenAI GPT API调用"
+                    placeholder="用途说明 (如: 用于n8n自动发布新闻文章)"
                     rows={2}
                   />
                 </div>
@@ -627,22 +661,16 @@ const SiteSettings = () => {
             </div>
           ))}
 
+          {/* 添加新API密钥表单 */}
           {showNewApiForm && (
             <div className="p-4 border-2 border-dashed rounded-lg space-y-3">
               <Input
-                placeholder="API密钥名称 (如: OpenAI API, 文章采集API)"
+                placeholder="API密钥名称 (如: n8n工作流密钥)"
                 value={newApiKey.name}
                 onChange={(e) => setNewApiKey(prev => ({ ...prev, name: e.target.value }))}
               />
-              <Input
-                type="password"
-                placeholder="API密钥值"
-                value={newApiKey.key}
-                onChange={(e) => setNewApiKey(prev => ({ ...prev, key: e.target.value }))}
-                className="font-mono text-sm"
-              />
               <Textarea
-                placeholder="描述（可选）- 说明此API密钥的用途"
+                placeholder="用途说明 (如: 用于n8n自动发布文章工作流)"
                 value={newApiKey.description}
                 onChange={(e) => setNewApiKey(prev => ({ ...prev, description: e.target.value }))}
                 rows={2}
@@ -650,14 +678,14 @@ const SiteSettings = () => {
               <div className="flex gap-2">
                 <Button onClick={addApiKey} size="sm">
                   <Save className="h-4 w-4 mr-2" />
-                  保存
+                  生成API密钥
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => {
                     setShowNewApiForm(false);
-                    setNewApiKey({ name: '', key: '', description: '' });
+                    setNewApiKey({ name: '', description: '' });
                   }}
                 >
                   取消
@@ -668,14 +696,41 @@ const SiteSettings = () => {
           
           <Separator />
           
-          <Button 
-            variant="outline" 
-            onClick={() => setShowNewApiForm(true)}
-            disabled={showNewApiForm}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            添加API密钥
-          </Button>
+          <div className="flex justify-between items-center">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowNewApiForm(true)}
+              disabled={showNewApiForm}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              生成新API密钥
+            </Button>
+            
+            <Button 
+              variant="secondary"
+              onClick={() => window.open('https://docs.lovable.dev', '_blank')}
+            >
+              查看API文档
+            </Button>
+          </div>
+
+          {/* API使用示例 */}
+          <div className="p-4 bg-muted/50 rounded-lg">
+            <h4 className="font-medium mb-2">n8n使用示例</h4>
+            <div className="text-sm space-y-2">
+              <div><strong>1. 在n8n中创建HTTP Request节点</strong></div>
+              <div><strong>2. 设置请求头:</strong> <code className="bg-background px-1 rounded">x-api-key: YOUR_API_KEY</code></div>
+              <div><strong>3. 创建文章:</strong> <code className="bg-background px-1 rounded">POST /article-api</code></div>
+              <div className="mt-2 p-2 bg-background rounded text-xs font-mono">
+{`{
+  "title": "文章标题",
+  "content": "文章内容",
+  "status": "published",
+  "auto_categorize": true
+}`}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

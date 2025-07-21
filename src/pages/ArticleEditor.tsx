@@ -247,23 +247,41 @@ const ArticleEditor = () => {
 
   const extractFirstImageAsCover = () => {
     // 从文章内容中提取第一张图片URL
-    const imageRegex = /!\[.*?\]\((.*?)\)/;
-    const match = articleData.content.match(imageRegex);
+    // 支持多种Markdown图片格式
+    const imageRegexes = [
+      /!\[.*?\]\((.*?)\)/g,  // ![alt](url)
+      /!\[(.*?)\]\((.*?)\)/g, // ![alt](url) 更精确
+      /<img[^>]+src\s*=\s*['"]([^'"]+)['"][^>]*>/gi  // HTML img标签
+    ];
     
-    if (match && match[1]) {
-      const imageUrl = match[1];
+    let imageUrl = '';
+    
+    for (const regex of imageRegexes) {
+      const match = articleData.content.match(regex);
+      if (match && match.length > 0) {
+        // 从匹配中提取URL
+        const firstMatch = match[0];
+        const urlMatch = firstMatch.match(/\(([^)]+)\)/) || firstMatch.match(/src\s*=\s*['"]([^'"]+)['"]/i);
+        if (urlMatch && urlMatch[1]) {
+          imageUrl = urlMatch[1].trim();
+          break;
+        }
+      }
+    }
+    
+    if (imageUrl) {
       setArticleData(prev => ({ 
         ...prev, 
         featured_image_url: imageUrl 
       }));
       toast({
         title: "提取成功",
-        description: "已将文章中的第一张图片设为封面",
+        description: `已将文章中的第一张图片设为封面: ${imageUrl.substring(0, 50)}...`,
       });
     } else {
       toast({
         title: "未找到图片",
-        description: "文章内容中没有找到图片，请先插入图片",
+        description: "文章内容中没有找到图片，请先插入图片。支持Markdown格式 ![](url) 和HTML格式 <img src=\"url\">",
         variant: "destructive",
       });
     }

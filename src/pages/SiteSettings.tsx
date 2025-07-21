@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Save, Image as ImageIcon, Globe, Key, Plus, Trash2 } from 'lucide-react';
+import { Upload, Save, Menu, Globe, Key, Plus, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 
@@ -497,7 +497,7 @@ const SiteSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" />
+            <Menu className="h-5 w-5" />
             导航菜单设置
           </CardTitle>
           <CardDescription>

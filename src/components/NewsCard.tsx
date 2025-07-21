@@ -28,7 +28,8 @@ export const NewsCard = ({
   featured = false,
   slug
 }: NewsCardProps) => {
-  const articleLink = slug ? `/article/${slug}` : `/article/${id}`;
+  // 优先使用slug，如果slug为空或无效则使用id
+  const articleLink = (slug && slug.trim() !== '') ? `/article/${slug}` : `/article/${id}`;
   
   return (
     <Link to={articleLink} className="block">

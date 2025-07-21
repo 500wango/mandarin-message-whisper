@@ -50,7 +50,7 @@ const Article = () => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('articles')
         .select(`
           *,
@@ -63,9 +63,25 @@ const Article = () => {
             email
           )
         `)
-        .or(`slug.eq.${slug},id.eq.${slug}`)
-        .eq('status', 'published')
-        .maybeSingle();
+        .eq('status', 'published');
+
+      // 根据slug类型决定查询方式
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug!);
+      
+      if (isUuid) {
+        // 如果是UUID格式，按ID查询
+        query = query.eq('id', slug);
+      } else {
+        // 如果不是UUID，按slug查询，同时处理空slug的情况
+        if (slug && slug.trim() !== '') {
+          query = query.eq('slug', slug);
+        } else {
+          // 如果slug为空，返回错误
+          throw new Error('Invalid article identifier');
+        }
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
 
@@ -77,6 +93,8 @@ const Article = () => {
           .from('articles')
           .update({ view_count: (data.view_count || 0) + 1 })
           .eq('id', data.id);
+      } else {
+        throw new Error('Article not found');
       }
     } catch (error: any) {
       console.error('Error fetching article:', error);

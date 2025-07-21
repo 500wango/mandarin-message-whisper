@@ -1,0 +1,284 @@
+{
+  "name": "FutureTools AI工具抓取与发布",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f6b2c4e0-d5a7-4c1b-9e8f-3a2b1c4d5e6f",
+      "name": "手动触发",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.futuretools.io/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "抓取FutureTools首页",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析HTML并提取AI工具信息\nconst cheerio = require('cheerio');\nconst html = $input.first().body;\nconst $ = cheerio.load(html);\n\nconst tools = [];\nlet count = 0;\n\n// 查找工具卡片（根据FutureTools的实际HTML结构调整选择器）\n$('.tool-card, .card, [data-testid=\"tool-card\"]').each(function() {\n  if (count >= 3) return false; // 只抓取3个工具\n  \n  const $card = $(this);\n  \n  // 提取工具信息\n  const title = $card.find('h3, .tool-title, .card-title').first().text().trim();\n  const description = $card.find('p, .description, .tool-description').first().text().trim();\n  const image = $card.find('img').first().attr('src') || $card.find('img').first().attr('data-src');\n  const link = $card.find('a').first().attr('href');\n  \n  if (title && description) {\n    tools.push({\n      title: title,\n      description: description,\n      image: image ? (image.startsWith('http') ? image : 'https://www.futuretools.io' + image) : null,\n      link: link ? (link.startsWith('http') ? link : 'https://www.futuretools.io' + link) : null,\n      originalIndex: count\n    });\n    count++;\n  }\n});\n\nif (tools.length === 0) {\n  // 备用选择器\n  $('.grid > div, .list-item, article').each(function() {\n    if (count >= 3) return false;\n    \n    const $item = $(this);\n    const title = $item.find('h1, h2, h3, h4, .title').first().text().trim();\n    const description = $item.find('p, .desc, .summary').first().text().trim();\n    const image = $item.find('img').first().attr('src') || $item.find('img').first().attr('data-src');\n    const link = $item.find('a').first().attr('href');\n    \n    if (title && description && title.length > 5) {\n      tools.push({\n        title: title,\n        description: description,\n        image: image ? (image.startsWith('http') ? image : 'https://www.futuretools.io' + image) : null,\n        link: link ? (link.startsWith('http') ? link : 'https://www.futuretools.io' + link) : null,\n        originalIndex: count\n      });\n      count++;\n    }\n  });\n}\n\nconsole.log(`找到 ${tools.length} 个AI工具`);\nreturn tools.map(tool => ({ json: tool }));"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "解析工具信息",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.deepseek.com/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$credentials.deepseekApi.token}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "deepseek-chat"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\n  \"role\": \"system\",\n  \"content\": \"你是一个专业的翻译助手，请将以下AI工具信息翻译成中文，保持原有的格式和结构。翻译时要保持专业性和准确性，特别是技术术语。\"\n}, {\n  \"role\": \"user\",\n  \"content\": `请翻译以下AI工具信息：\\n\\n标题：${$json.title}\\n\\n描述：${$json.description}\\n\\n请返回JSON格式：{\\\"title\\\": \\\"中文标题\\\", \\\"description\\\": \\\"中文描述\\\"}`\n}]"
+            },
+            {
+              "name": "temperature",
+              "value": "0.3"
+            },
+            {
+              "name": "max_tokens",
+              "value": "1000"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Deepseek翻译",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 处理翻译结果并格式化数据\nconst originalData = $input.first().json;\nconst translationResponse = $input.last().json;\n\nlet translatedTitle = originalData.title;\nlet translatedDescription = originalData.description;\n\ntry {\n  const content = translationResponse.choices[0].message.content;\n  const translatedData = JSON.parse(content);\n  \n  translatedTitle = translatedData.title || originalData.title;\n  translatedDescription = translatedData.description || originalData.description;\n} catch (error) {\n  console.log('翻译解析失败，使用原文：', error.message);\n}\n\n// 生成slug\nconst generateSlug = (title) => {\n  return title\n    .toLowerCase()\n    .replace(/[^a-z0-9\\u4e00-\\u9fa5]+/g, '-')\n    .replace(/^-+|-+$/g, '')\n    .slice(0, 50);\n};\n\n// 格式化为文章内容\nconst content = `## ${translatedTitle}\n\n${translatedDescription}\n\n### 工具信息\n\n- **原始链接**: [${originalData.title}](${originalData.link})\n- **工具类型**: AI工具\n- **来源**: FutureTools.io\n\n![${translatedTitle}](${originalData.image})\n\n---\n\n*本内容由FutureTools.io抓取并自动翻译，如有不准确之处请以原文为准。*`;\n\nconst articleData = {\n  title: translatedTitle,\n  slug: generateSlug(translatedTitle),\n  content: content,\n  excerpt: translatedDescription.length > 150 ? translatedDescription.substring(0, 150) + '...' : translatedDescription,\n  meta_title: translatedTitle,\n  meta_description: translatedDescription,\n  featured_image_url: originalData.image,\n  status: 'published',\n  category_id: 'ai-tools', // 需要根据实际的分类ID调整\n  original_url: originalData.link,\n  source: 'FutureTools.io'\n};\n\nreturn { json: articleData };"
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "格式化文章数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://dembuvipwnfolksvqygl.supabase.co/functions/v1/article-api",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlbWJ1dmlwd25mb2xrc3ZxeWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjE4ODAsImV4cCI6MjA2ODMzNzg4MH0.ZjXV_HFJ4vp98ZxFBpQbtH7VUO4R3lzi_QzpgYGmsMI"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "{{$credentials.articleApi.key}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{$json.title}}"
+            },
+            {
+              "name": "slug",
+              "value": "={{$json.slug}}"
+            },
+            {
+              "name": "content",
+              "value": "={{$json.content}}"
+            },
+            {
+              "name": "excerpt",
+              "value": "={{$json.excerpt}}"
+            },
+            {
+              "name": "meta_title",
+              "value": "={{$json.meta_title}}"
+            },
+            {
+              "name": "meta_description",
+              "value": "={{$json.meta_description}}"
+            },
+            {
+              "name": "featured_image_url",
+              "value": "={{$json.featured_image_url}}"
+            },
+            {
+              "name": "status",
+              "value": "={{$json.status}}"
+            },
+            {
+              "name": "category_id",
+              "value": "={{$json.category_id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "发布文章",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 输出执行结果\nconst results = $input.all();\nconst successCount = results.filter(result => result.json && result.json.success !== false).length;\nconst totalCount = results.length;\n\nconsole.log(`工作流执行完成：成功发布 ${successCount}/${totalCount} 篇文章`);\n\nreturn {\n  json: {\n    message: `工作流执行完成：成功发布 ${successCount}/${totalCount} 篇文章`,\n    results: results.map(r => ({\n      title: r.json?.title || '未知',\n      status: r.json?.success !== false ? '成功' : '失败',\n      error: r.json?.error || null\n    }))\n  }\n};"
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "输出结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "手动触发": {
+      "main": [
+        [
+          {
+            "node": "抓取FutureTools首页",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "抓取FutureTools首页": {
+      "main": [
+        [
+          {
+            "node": "解析工具信息",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析工具信息": {
+      "main": [
+        [
+          {
+            "node": "Deepseek翻译",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deepseek翻译": {
+      "main": [
+        [
+          {
+            "node": "格式化文章数据",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "格式化文章数据": {
+      "main": [
+        [
+          {
+            "node": "发布文章",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "发布文章": {
+      "main": [
+        [
+          {
+            "node": "输出结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "futuretools-scraper-workflow",
+  "tags": [
+    {
+      "createdAt": "2024-01-20T10:00:00.000Z",
+      "updatedAt": "2024-01-20T10:00:00.000Z",
+      "id": "ai-tools",
+      "name": "AI工具"
+    }
+  ]
+}

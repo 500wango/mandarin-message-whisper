@@ -153,13 +153,13 @@ const ArticleEditor = () => {
     setLoading(false);
   };
 
-  const generateSlug = (title: string) => {
+  const generateSlug = async (title: string) => {
     if (!title.trim()) {
       // 如果标题为空，生成随机slug
       return 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     }
     
-    const slug = title
+    let baseSlug = title
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
@@ -167,14 +167,40 @@ const ArticleEditor = () => {
       .trim();
     
     // 如果生成的slug为空，使用随机值
-    return slug || 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    if (!baseSlug) {
+      return 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // 检查slug是否已存在
+    let finalSlug = baseSlug;
+    let counter = 1;
+    
+    while (true) {
+      const { data: existingArticles } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('slug', finalSlug);
+      
+      // 如果没有找到重复的，或者找到的是当前编辑的文章，则使用这个slug
+      if (!existingArticles || existingArticles.length === 0 || 
+          (isEditing && existingArticles.length === 1 && existingArticles[0].id === id)) {
+        break;
+      }
+      
+      // 如果找到重复的，添加数字后缀
+      finalSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
+    return finalSlug;
   };
 
-  const handleTitleChange = (title: string) => {
+  const handleTitleChange = async (title: string) => {
+    const newSlug = !isEditing ? await generateSlug(title) : articleData.slug;
     setArticleData(prev => ({
       ...prev,
       title,
-      slug: !isEditing ? generateSlug(title) : prev.slug,
+      slug: newSlug,
       meta_title: !prev.meta_title ? title : prev.meta_title
     }));
   };
@@ -238,16 +264,22 @@ const ArticleEditor = () => {
 
     setLoading(true);
 
-    const saveData = {
-      ...articleData,
-      status,
-      author_id: user?.id,
-      published_at: status === 'published' && articleData.status !== 'published' 
-        ? new Date().toISOString() 
-        : undefined
-    };
-
     try {
+      // 确保slug是唯一的
+      let finalSlug = articleData.slug;
+      if (!finalSlug || finalSlug.trim() === '') {
+        finalSlug = await generateSlug(articleData.title);
+      }
+
+      const saveData = {
+        ...articleData,
+        slug: finalSlug,
+        status,
+        author_id: user?.id,
+        published_at: status === 'published' && articleData.status !== 'published' 
+          ? new Date().toISOString() 
+          : undefined
+      };
       if (isEditing) {
         const { error } = await supabase
           .from('articles')

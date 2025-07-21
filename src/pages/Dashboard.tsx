@@ -87,6 +87,9 @@ const Dashboard = () => {
     drafts: 0,
     totalViews: 0
   });
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -96,6 +99,7 @@ const Dashboard = () => {
     
     fetchProfile();
     fetchArticles();
+    fetchCategories();
   }, [user, navigate]);
 
   // 单独的useEffect来处理管理员权限的数据获取
@@ -248,6 +252,32 @@ const Dashboard = () => {
     
     setLoading(false);
   };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, color')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error: any) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // 筛选文章的 useEffect
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      setFilteredArticles(articles);
+    } else {
+      const filtered = articles.filter(article => 
+        article.categories && article.categories.name === selectedCategory
+      );
+      setFilteredArticles(filtered);
+    }
+  }, [articles, selectedCategory]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -469,22 +499,80 @@ const Dashboard = () => {
             {/* 文章列表 */}
             <Card>
               <CardHeader>
-                <CardTitle>{profile?.role === 'admin' ? '所有文章' : '我的文章'}</CardTitle>
-                <CardDescription>
-                  {profile?.role === 'admin' ? '管理全站文章内容' : '查看您的文章内容'}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{profile?.role === 'admin' ? '所有文章' : '我的文章'}</CardTitle>
+                    <CardDescription>
+                      {profile?.role === 'admin' ? '管理全站文章内容' : '查看您的文章内容'}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="按分类筛选" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">全部分类</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            <div className="flex items-center space-x-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: category.color }}
+                              />
+                              <span>{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {articles.length === 0 ? (
+                {selectedCategory !== 'all' && (
+                  <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Tag className="h-4 w-4" />
+                        <span>筛选结果: </span>
+                        <Badge variant="outline" className="flex items-center space-x-1">
+                          <div 
+                            className="w-2 h-2 rounded-full" 
+                            style={{ backgroundColor: categories.find(c => c.name === selectedCategory)?.color }}
+                          />
+                          <span>{selectedCategory}</span>
+                        </Badge>
+                        <span className="text-muted-foreground">
+                          ({filteredArticles.length} 篇文章)
+                        </span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSelectedCategory('all')}
+                        className="text-xs"
+                      >
+                        清除筛选
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {filteredArticles.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">
-                      {profile?.role === 'admin' ? '还没有文章' : '您还没有文章'}
+                      {selectedCategory === 'all' 
+                        ? (profile?.role === 'admin' ? '还没有文章' : '您还没有文章')
+                        : `该分类下没有文章`
+                      }
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      {profile?.role === 'admin' 
-                        ? '开始创建第一篇文章吧' 
-                        : '请联系管理员创建文章'
+                      {selectedCategory === 'all'
+                        ? (profile?.role === 'admin' 
+                          ? '开始创建第一篇文章吧' 
+                          : '请联系管理员创建文章')
+                        : `"${selectedCategory}" 分类下还没有文章内容`
                       }
                     </p>
                     {profile?.role === 'admin' && (
@@ -496,7 +584,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {articles.map((article) => (
+                    {filteredArticles.map((article) => (
                       <div
                         key={article.id}
                         className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors"

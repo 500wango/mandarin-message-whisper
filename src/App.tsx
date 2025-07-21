@@ -46,6 +46,7 @@ const App = () => (
             <Route path="/admin/dashboard" element={<Dashboard />} />
             <Route path="/admin/dashboard/editor" element={<ArticleEditor />} />
             <Route path="/admin/dashboard/editor/:id" element={<ArticleEditor />} />
+            <Route path="/dashboard/editor" element={<ArticleEditor />} />
             <Route path="/dashboard/editor/:id" element={<ArticleEditor />} />
             <Route path="/admin/dashboard/media" element={<MediaManager />} />
             <Route path="/admin/dashboard/scraper" element={<ScraperManager />} />

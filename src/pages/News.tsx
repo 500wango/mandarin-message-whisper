@@ -56,7 +56,8 @@ const News = () => {
           published_at,
           view_count,
           featured_image_url,
-          categories:category_id (
+          category_id,
+          categories!inner (
             id,
             name,
             slug,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Send, Eye, ImageIcon, Grid } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 interface Category {
   id: string;
@@ -52,6 +54,7 @@ const ArticleEditor = () => {
   const { id } = useParams();
   const { toast } = useToast();
   const isEditing = !!id;
+  const quillRef = useRef<ReactQuill>(null);
 
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -68,6 +71,37 @@ const ArticleEditor = () => {
     meta_description: '',
     featured_image_url: ''
   });
+
+  // 富文本编辑器配置
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'font': [] }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'direction': 'rtl' }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['blockquote', 'code-block'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'script',
+    'list', 'bullet',
+    'indent',
+    'direction', 'align',
+    'link', 'image', 'video',
+    'blockquote', 'code-block'
+  ];
 
   useEffect(() => {
     if (!user) {
@@ -106,7 +140,6 @@ const ArticleEditor = () => {
 
       if (error) throw error;
       
-      // 类型转换以符合 MediaFile 接口
       const typedData: MediaFile[] = (data || []).map(item => ({
         ...item,
         type: item.type as 'image' | 'video'
@@ -155,7 +188,6 @@ const ArticleEditor = () => {
 
   const generateSlug = async (title: string) => {
     if (!title.trim()) {
-      // 如果标题为空，生成随机slug
       return 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     }
     
@@ -166,12 +198,10 @@ const ArticleEditor = () => {
       .replace(/-+/g, '-')
       .trim();
     
-    // 如果生成的slug为空，使用随机值
     if (!baseSlug) {
       return 'article-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     }
 
-    // 检查slug是否已存在
     let finalSlug = baseSlug;
     let counter = 1;
     
@@ -181,13 +211,11 @@ const ArticleEditor = () => {
         .select('id')
         .eq('slug', finalSlug);
       
-      // 如果没有找到重复的，或者找到的是当前编辑的文章，则使用这个slug
       if (!existingArticles || existingArticles.length === 0 || 
           (isEditing && existingArticles.length === 1 && existingArticles[0].id === id)) {
         break;
       }
       
-      // 如果找到重复的，添加数字后缀
       finalSlug = `${baseSlug}-${counter}`;
       counter++;
     }
@@ -206,23 +234,15 @@ const ArticleEditor = () => {
   };
 
   const insertImageAtCursor = (imageUrl: string, altText: string) => {
-    const textarea = document.getElementById('content') as HTMLTextAreaElement;
-    if (!textarea) return;
-
-    const cursorPosition = textarea.selectionStart;
-    const textBefore = articleData.content.substring(0, cursorPosition);
-    const textAfter = articleData.content.substring(cursorPosition);
-    const imageMarkdown = `![${altText}](${imageUrl})`;
-    
-    const newContent = textBefore + imageMarkdown + textAfter;
-    setArticleData(prev => ({ ...prev, content: newContent }));
-    
-    // 重新定位光标到插入的图片之后
-    setTimeout(() => {
-      const newCursorPosition = cursorPosition + imageMarkdown.length;
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-      textarea.focus();
-    }, 0);
+    if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      const index = range ? range.index : quill.getLength();
+      
+      quill.insertEmbed(index, 'image', imageUrl);
+      quill.insertText(index + 1, '\n');
+      quill.setSelection(index + 2);
+    }
   };
 
   const getFileUrl = (file: MediaFile) => {
@@ -246,42 +266,25 @@ const ArticleEditor = () => {
   };
 
   const extractFirstImageAsCover = () => {
-    // 从文章内容中提取第一张图片URL
-    // 支持多种Markdown图片格式
-    const imageRegexes = [
-      /!\[.*?\]\((.*?)\)/g,  // ![alt](url)
-      /!\[(.*?)\]\((.*?)\)/g, // ![alt](url) 更精确
-      /<img[^>]+src\s*=\s*['"]([^'"]+)['"][^>]*>/gi  // HTML img标签
-    ];
+    // 从富文本内容中提取第一张图片URL
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = articleData.content;
+    const firstImg = tempDiv.querySelector('img');
     
-    let imageUrl = '';
-    
-    for (const regex of imageRegexes) {
-      const match = articleData.content.match(regex);
-      if (match && match.length > 0) {
-        // 从匹配中提取URL
-        const firstMatch = match[0];
-        const urlMatch = firstMatch.match(/\(([^)]+)\)/) || firstMatch.match(/src\s*=\s*['"]([^'"]+)['"]/i);
-        if (urlMatch && urlMatch[1]) {
-          imageUrl = urlMatch[1].trim();
-          break;
-        }
-      }
-    }
-    
-    if (imageUrl) {
+    if (firstImg && firstImg.src) {
+      const imageUrl = firstImg.src;
       setArticleData(prev => ({ 
         ...prev, 
         featured_image_url: imageUrl 
       }));
       toast({
         title: "提取成功",
-        description: `已将文章中的第一张图片设为封面: ${imageUrl.substring(0, 50)}...`,
+        description: `已将文章中的第一张图片设为封面`,
       });
     } else {
       toast({
         title: "未找到图片",
-        description: "文章内容中没有找到图片，请先插入图片。支持Markdown格式 ![](url) 和HTML格式 <img src=\"url\">",
+        description: "文章内容中没有找到图片，请先插入图片。",
         variant: "destructive",
       });
     }
@@ -307,7 +310,6 @@ const ArticleEditor = () => {
     setLoading(true);
 
     try {
-      // 确保slug是唯一的
       let finalSlug = articleData.slug;
       if (!finalSlug || finalSlug.trim() === '') {
         finalSlug = await generateSlug(articleData.title);
@@ -534,16 +536,20 @@ const ArticleEditor = () => {
                       </DialogContent>
                     </Dialog>
                   </div>
-                  <Textarea
-                    id="content"
-                    value={articleData.content}
-                    onChange={(e) => setArticleData(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="在这里输入文章内容..."
-                    rows={20}
-                    className="font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    支持Markdown格式，点击"插入图片"按钮可以从媒体库选择图片
+                  <div className="min-h-[400px]">
+                    <ReactQuill
+                      ref={quillRef}
+                      theme="snow"
+                      value={articleData.content}
+                      onChange={(content) => setArticleData(prev => ({ ...prev, content }))}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      placeholder="在这里输入文章内容..."
+                      style={{ height: '400px' }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-16">
+                    支持富文本格式，可设置字体、颜色、加粗等样式，点击"插入图片"按钮可以从媒体库选择图片
                   </p>
                 </div>
               </CardContent>

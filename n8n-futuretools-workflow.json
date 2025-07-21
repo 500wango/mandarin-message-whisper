@@ -131,46 +131,8 @@
           ]
         },
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "title",
-              "value": "={{$json.title}}"
-            },
-            {
-              "name": "slug",
-              "value": "={{$json.slug}}"
-            },
-            {
-              "name": "content",
-              "value": "={{$json.content}}"
-            },
-            {
-              "name": "excerpt",
-              "value": "={{$json.excerpt}}"
-            },
-            {
-              "name": "meta_title",
-              "value": "={{$json.meta_title}}"
-            },
-            {
-              "name": "meta_description",
-              "value": "={{$json.meta_description}}"
-            },
-            {
-              "name": "featured_image_url",
-              "value": "={{$json.featured_image_url}}"
-            },
-            {
-              "name": "status",
-              "value": "={{$json.status}}"
-            },
-            {
-              "name": "category_id",
-              "value": "={{$json.category_id}}"
-            }
-          ]
-        },
+        "contentType": "json",
+        "body": "={\"title\": $json.title, \"slug\": $json.slug, \"content\": $json.content, \"excerpt\": $json.excerpt, \"meta_title\": $json.meta_title, \"meta_description\": $json.meta_description, \"featured_image_url\": $json.featured_image_url, \"status\": $json.status, \"category_id\": $json.category_id, \"auto_categorize\": true}",
         "options": {}
       },
       "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",

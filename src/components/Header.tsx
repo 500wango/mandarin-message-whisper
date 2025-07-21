@@ -53,7 +53,7 @@ export const Header = () => {
         { id: '1', name: '首页', href: '/', icon: 'Brain', sort_order: 1 },
         { id: '2', name: 'AI新闻', href: '/news', icon: 'Zap', sort_order: 2 },
         { id: '3', name: 'AI工具', href: '/tools', icon: 'Sparkles', sort_order: 3 },
-        { id: '4', name: '提示词工程', href: '/prompts', icon: 'Brain', sort_order: 4 },
+        { id: '4', name: '提示词库', href: '/prompts', icon: 'Brain', sort_order: 4 },
       ]);
     }
   };
@@ -65,15 +65,18 @@ export const Header = () => {
         .select('setting_key, setting_value')
         .in('setting_key', ['site_title', 'site_logo_url']);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching site settings:', error);
+        return;
+      }
       
       const settingsMap = data?.reduce((acc: Record<string, string>, item) => {
         acc[item.setting_key] = item.setting_value;
         return acc;
-      }, {});
+      }, {}) || {};
 
-      if (settingsMap?.site_title) setSiteTitle(settingsMap.site_title);
-      if (settingsMap?.site_logo_url) setSiteLogoUrl(settingsMap.site_logo_url);
+      if (settingsMap.site_title) setSiteTitle(settingsMap.site_title);
+      if (settingsMap.site_logo_url) setSiteLogoUrl(settingsMap.site_logo_url);
     } catch (error) {
       console.error('Error fetching site settings:', error);
     }

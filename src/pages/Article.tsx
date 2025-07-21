@@ -65,42 +65,44 @@ const Article = () => {
         `)
         .eq('status', 'published');
 
-      // 根据slug类型决定查询方式
+      // 智能判断查询方式
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug!);
       
       if (isUuid) {
         // 如果是UUID格式，按ID查询
         query = query.eq('id', slug);
+      } else if (slug && slug.trim() !== '') {
+        // 如果是有效的slug，按slug查询
+        query = query.eq('slug', slug);
       } else {
-        // 如果不是UUID，按slug查询，同时处理空slug的情况
-        if (slug && slug.trim() !== '') {
-          query = query.eq('slug', slug);
-        } else {
-          // 如果slug为空，返回错误
-          throw new Error('Invalid article identifier');
-        }
+        // 如果slug无效，抛出错误
+        throw new Error('无效的文章标识符');
       }
 
       const { data, error } = await query.maybeSingle();
 
-      if (error) throw error;
-
-      if (data) {
-        setArticle(data);
-        
-        // 增加浏览量
-        await supabase
-          .from('articles')
-          .update({ view_count: (data.view_count || 0) + 1 })
-          .eq('id', data.id);
-      } else {
-        throw new Error('Article not found');
+      if (error) {
+        console.error('Database query error:', error);
+        throw new Error(`数据库查询错误: ${error.message}`);
       }
+
+      if (!data) {
+        throw new Error('文章不存在或未发布');
+      }
+
+      setArticle(data);
+      
+      // 增加浏览量
+      await supabase
+        .from('articles')
+        .update({ view_count: (data.view_count || 0) + 1 })
+        .eq('id', data.id);
+        
     } catch (error: any) {
       console.error('Error fetching article:', error);
       toast({
         title: "文章不存在",
-        description: "请检查链接是否正确",
+        description: error.message || "请检查链接是否正确",
         variant: "destructive",
       });
       navigate('/');

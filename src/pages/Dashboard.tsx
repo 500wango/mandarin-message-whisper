@@ -90,33 +90,50 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth');
+      navigate('/admin/auth');
       return;
     }
     
     fetchProfile();
     fetchArticles();
-    // 如果是管理员，获取所有用户和订阅者
+  }, [user, navigate]);
+
+  // 单独的useEffect来处理管理员权限的数据获取
+  useEffect(() => {
     if (profile?.role === 'admin') {
       fetchAllUsers();
       fetchSubscribers();
       fetchPageContents();
     }
-  }, [user, navigate, profile?.role]);
+  }, [profile?.role]);
 
   const fetchProfile = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('display_name, role')
-      .eq('id', user.id)
-      .single();
-      
-    if (error) {
-      console.error('Error fetching profile:', error);
-    } else {
-      setProfile(data);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name, role')
+        .eq('id', user.id)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: "获取用户信息失败",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setProfile(data);
+      }
+    } catch (error: any) {
+      console.error('Unexpected error fetching profile:', error);
+      toast({
+        title: "获取用户信息失败",
+        description: "发生意外错误",
+        variant: "destructive",
+      });
     }
   };
 

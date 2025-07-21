@@ -49,6 +49,7 @@ const App = () => (
             <Route path="/dashboard/editor" element={<ArticleEditor />} />
             <Route path="/dashboard/editor/:id" element={<ArticleEditor />} />
             <Route path="/admin/dashboard/media" element={<MediaManager />} />
+            <Route path="/dashboard/media" element={<MediaManager />} />
             <Route path="/admin/dashboard/scraper" element={<ScraperManager />} />
             <Route path="/admin/dashboard/page-editor/:pageKey" element={<PageEditor />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

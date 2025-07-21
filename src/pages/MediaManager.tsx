@@ -65,7 +65,7 @@ const MediaManager = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth');
+      navigate('/admin/auth');
       return;
     }
     fetchMediaFiles();

@@ -188,6 +188,7 @@ const News = () => {
                   readTime={calculateReadTime(article.excerpt || '')}
                   views={article.view_count}
                   imageUrl={article.featured_image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop'}
+                  slug={article.slug}
                   featured={index === 0}
                 />
               </div>

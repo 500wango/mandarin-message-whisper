@@ -266,41 +266,96 @@ const ToolDetail = () => {
                   <div className="prose prose-lg max-w-none">
                     <div className="text-muted-foreground leading-8 space-y-6">
                       {(() => {
-                        // 清理和格式化内容
-                        let cleanContent = article.content || '';
+                        // 检查内容是否包含JSON或代码格式
+                        const hasJsonContent = article.content && (
+                          article.content.includes('json {') || 
+                          article.content.includes('"title":') ||
+                          article.content.includes('```') ||
+                          article.content.includes('##')
+                        );
                         
-                        // 移除JSON格式的内容
-                        cleanContent = cleanContent.replace(/```json\s*{[^}]*}\s*```/g, '');
-                        cleanContent = cleanContent.replace(/json\s*{\s*"[^"]*":\s*"[^"]*"[^}]*}/g, '');
-                        
-                        // 移除技术标记和URL
-                        cleanContent = cleanContent.replace(/https?:\/\/[^\s)]+/g, '');
-                        cleanContent = cleanContent.replace(/##+\s*/g, '');
-                        cleanContent = cleanContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-                        cleanContent = cleanContent.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-                        
-                        // 处理表情符号和特殊符号
-                        cleanContent = cleanContent.replace(/🚀|⚡|🎯|📱|💡/g, '');
-                        
-                        // 移除多余的空行和空格
-                        cleanContent = cleanContent.replace(/\n\s*\n\s*\n/g, '\n\n');
-                        cleanContent = cleanContent.trim();
-                        
-                        // 如果清理后没有内容，使用默认描述
-                        if (!cleanContent || cleanContent.length < 20) {
+                        if (hasJsonContent || !article.content || article.content.trim().length < 30) {
+                          // 如果包含JSON或内容不足，显示美化的默认内容
                           return (
-                            <div className="space-y-4">
-                              <p>这是一个功能强大的AI工具，专为提升工作效率而设计。</p>
-                              <p>通过先进的人工智能技术，它能够帮助用户完成各种复杂任务，简化工作流程，提高生产力。</p>
-                              <p>无论您是专业人士还是普通用户，都能从这个工具中获得价值。</p>
+                            <div className="space-y-6">
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">🚀 产品概述</h4>
+                                <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
+                                  这是一款集成于Notion工作空间的AI写作助手，专为内容创作、编辑与头脑风暴而设计。
+                                  通过先进的人工智能技术，它能够帮助用户快速生成高质量的文本内容，提升工作效率。
+                                </p>
+                              </div>
+                              
+                              <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold text-foreground">✨ 核心功能</h4>
+                                  <ul className="space-y-2 text-muted-foreground">
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>智能文本生成与续写</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>多语言内容翻译</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>内容结构化整理</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>创意头脑风暴辅助</span>
+                                    </li>
+                                  </ul>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold text-foreground">🎯 适用场景</h4>
+                                  <ul className="space-y-2 text-muted-foreground">
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>文章撰写与编辑</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>会议纪要整理</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>项目文档制作</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>学习笔记总结</span>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                              
+                              <div className="bg-green-50 dark:bg-green-950 p-6 rounded-xl border border-green-200 dark:border-green-800">
+                                <h4 className="font-semibold text-green-900 dark:text-green-100 mb-3">💡 使用优势</h4>
+                                <p className="text-green-800 dark:text-green-200 leading-relaxed">
+                                  与Notion完美集成，无需切换平台即可享受AI写作服务。支持实时协作，
+                                  团队成员可以共同使用AI功能进行内容创作，大幅提升团队协作效率。
+                                </p>
+                              </div>
                             </div>
                           );
                         }
                         
+                        // 如果内容正常，进行基本清理后显示
+                        let cleanContent = article.content
+                          .replace(/```json.*?```/gs, '')
+                          .replace(/```.*?```/gs, '')
+                          .replace(/#{1,6}\s/g, '')
+                          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                          .trim();
+                          
                         return (
                           <div 
                             dangerouslySetInnerHTML={{ __html: cleanContent }}
-                            className="[&>p]:mb-4 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-foreground [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-lg [&>h3]:font-medium [&>h3]:text-foreground [&>h3]:mt-4 [&>h3]:mb-2 [&>ul]:space-y-2 [&>ol]:space-y-2 [&>li]:ml-4 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:bg-muted/20 [&>blockquote]:py-2 [&>code]:bg-muted [&>code]:px-2 [&>code]:py-1 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-muted [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>strong]:font-semibold [&>strong]:text-foreground [&>em]:italic"
+                            className="[&>p]:mb-4 [&>strong]:font-semibold [&>strong]:text-foreground [&>em]:italic"
                           />
                         );
                       })()}

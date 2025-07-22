@@ -1,119 +1,121 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Star, Users, ExternalLink } from "lucide-react";
+import { Star, Users, ExternalLink, Upload } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface ToolCardProps {
   id: string;
-  name: string;
-  description: string;
+  title: string;
+  excerpt: string;
+  imageUrl: string;
+  slug: string;
   category: string;
-  rating: number;
-  users: string;
-  pricing: 'Free' | 'Freemium' | 'Paid';
-  logoUrl: string;
-  websiteUrl: string;
-  features: string[];
+  categoryColor: string;
+  rating?: number;
+  users?: string;
+  pricing?: 'Free' | 'Freemium' | 'Paid';
 }
 
 export const ToolCard = ({
-  name,
-  description,
+  title,
+  excerpt,
+  imageUrl,
+  slug,
   category,
-  rating,
-  users,
-  pricing,
-  logoUrl,
-  websiteUrl,
-  features
+  categoryColor,
+  rating = 4.5,
+  users = "1K+",
+  pricing = "Freemium"
 }: ToolCardProps) => {
   const getPricingColor = (pricing: string): string => {
     switch (pricing) {
       case 'Free':
-        return 'text-green-600 border-green-200 bg-green-50';
+        return 'text-green-600 border-green-200 bg-green-50 dark:text-green-400 dark:border-green-800 dark:bg-green-950';
       case 'Freemium':
-        return 'text-blue-600 border-blue-200 bg-blue-50';
+        return 'text-blue-600 border-blue-200 bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:bg-blue-950';
       case 'Paid':
-        return 'text-orange-600 border-orange-200 bg-orange-50';
+        return 'text-orange-600 border-orange-200 bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:bg-orange-950';
       default:
-        return 'text-gray-600 border-gray-200 bg-gray-50';
+        return 'text-gray-600 border-gray-200 bg-gray-50 dark:text-gray-400 dark:border-gray-700 dark:bg-gray-800';
     }
   };
 
   return (
-    <Card className="group h-full overflow-hidden border-border/40 bg-card/50 backdrop-blur-sm hover:shadow-lg hover:border-primary/40 transition-all duration-300">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+    <Link to={`/tool/${slug}`} className="block">
+      <Card className="group h-full overflow-hidden border-border/40 bg-card/50 backdrop-blur-sm hover:shadow-xl hover:shadow-primary/10 hover:border-primary/40 transition-all duration-300 cursor-pointer">
+        {/* 工具截图 */}
+        <CardHeader className="p-0 relative">
+          <div className="relative overflow-hidden">
             <img 
-              src={logoUrl} 
-              alt={`${name} logo`}
-              className="w-12 h-12 rounded-lg object-cover border border-border/20"
+              src={imageUrl || 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=200&fit=crop'} 
+              alt={title}
+              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=48&h=48&fit=crop';
+                target.src = 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=200&fit=crop';
               }}
             />
-            <div>
-              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                {name}
-              </h3>
-              <Badge variant="secondary" className="text-xs">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            {/* 上传图标 */}
+            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
+                <Upload className="h-4 w-4 text-white" />
+              </div>
+            </div>
+            
+            {/* 分类标签 */}
+            <div className="absolute top-3 left-3">
+              <Badge 
+                variant="secondary" 
+                className="text-xs font-medium backdrop-blur-sm"
+                style={{ backgroundColor: `${categoryColor}20`, color: categoryColor, borderColor: `${categoryColor}40` }}
+              >
                 {category}
               </Badge>
             </div>
+            
+            {/* 定价标签 */}
+            <div className="absolute bottom-3 left-3">
+              <Badge 
+                variant="outline" 
+                className={`text-xs backdrop-blur-sm ${getPricingColor(pricing)}`}
+              >
+                {pricing}
+              </Badge>
+            </div>
           </div>
-          <Badge 
-            variant="outline" 
-            className={`text-xs ${getPricingColor(pricing)}`}
-          >
-            {pricing}
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pb-4">
-        <p className="text-muted-foreground text-sm line-clamp-3 mb-4">
-          {description}
-        </p>
+        </CardHeader>
         
-        {features.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">主要功能:</h4>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              {features.slice(0, 3).map((feature, index) => (
-                <li key={index} className="flex items-center gap-2">
-                  <div className="w-1 h-1 bg-primary rounded-full" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+            {title}
+          </h3>
+          <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed mb-4">
+            {excerpt}
+          </p>
+          
+          {/* 评分和用户数 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                <span className="font-medium">{rating}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                <span>{users}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center text-primary text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span className="mr-1">查看详情</span>
+              <ExternalLink className="h-3 w-3" />
+            </div>
           </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="pt-0 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-            <span>{rating}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            <span>{users}</span>
-          </div>
-        </div>
-        
-        <Button 
-          size="sm" 
-          variant="ghost"
-          className="h-8 px-3 text-primary hover:text-primary hover:bg-primary/10"
-          onClick={() => window.open(websiteUrl, '_blank')}
-        >
-          <span className="mr-1">访问</span>
-          <ExternalLink className="h-3 w-3" />
-        </Button>
-      </CardFooter>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 };

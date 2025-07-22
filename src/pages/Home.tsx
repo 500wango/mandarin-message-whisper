@@ -161,39 +161,39 @@ const Home = () => {
   const popularTools = [
     {
       id: '1',
-      name: 'ChatGPT Plus',
-      description: 'OpenAI开发的强大对话AI，支持GPT-4模型，适用于写作、编程、分析等多种任务',
+      title: 'ChatGPT Plus',
+      excerpt: 'OpenAI开发的强大对话AI，支持GPT-4模型，适用于写作、编程、分析等多种任务',
       category: '对话AI',
+      categoryColor: '#10B981',
       rating: 4.8,
       users: '100M+',
       pricing: 'Freemium' as const,
-      logoUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=100&h=100&fit=crop',
-      websiteUrl: 'https://chat.openai.com',
-      features: ['GPT-4模型', '多模态输入', 'API接入', '插件生态']
+      imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=200&fit=crop',
+      slug: 'chatgpt-plus'
     },
     {
       id: '2',
-      name: 'Midjourney',
-      description: '业界领先的AI图像生成工具，专为创意设计和艺术创作而生',
+      title: 'Midjourney',
+      excerpt: '业界领先的AI图像生成工具，专为创意设计和艺术创作而生',
       category: 'AI绘画',
+      categoryColor: '#8B5CF6',
       rating: 4.7,
       users: '15M+',
       pricing: 'Paid' as const,
-      logoUrl: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=100&h=100&fit=crop',
-      websiteUrl: 'https://midjourney.com',
-      features: ['高质量图像', '多种风格', '商业许可', '社区分享']
+      imageUrl: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=400&h=200&fit=crop',
+      slug: 'midjourney'
     },
     {
       id: '3',
-      name: 'Claude',
-      description: 'Anthropic开发的AI助手，注重安全性和准确性，擅长分析和推理任务',
+      title: 'Claude',
+      excerpt: 'Anthropic开发的AI助手，注重安全性和准确性，擅长分析和推理任务',
       category: 'AI助手',
+      categoryColor: '#F59E0B',
       rating: 4.6,
       users: '5M+',
       pricing: 'Freemium' as const,
-      logoUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=100&h=100&fit=crop',
-      websiteUrl: 'https://claude.ai',
-      features: ['长文本处理', '代码分析', '安全对话', '多语言支持']
+      imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=200&fit=crop',
+      slug: 'claude'
     }
   ];
 

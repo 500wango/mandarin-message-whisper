@@ -1,4 +1,4 @@
-import { ArticleToolCard } from '@/components/ArticleToolCard';
+import { ToolCard } from '@/components/ToolCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -148,17 +148,14 @@ const Tools = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredArticles.map((article, index) => (
               <div key={article.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <ArticleToolCard 
+                <ToolCard 
                   id={article.id}
                   title={article.title}
-                  excerpt={article.excerpt || ''}
+                  excerpt={article.excerpt || '探索这个强大的AI工具，提升您的工作效率'}
                   imageUrl={article.featured_image_url || 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=200&fit=crop'}
-                  publishedAt={article.published_at}
                   slug={article.slug}
                   category={article.category?.name || 'AI工具'}
                   categoryColor={article.category?.color || '#8B5CF6'}
-                  viewCount={article.view_count}
-                  readTime={calculateReadTime(article.excerpt || '')}
                 />
               </div>
             ))}

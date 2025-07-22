@@ -742,7 +742,9 @@ const Dashboard = () => {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground truncate mb-2">
-                              {article.excerpt}
+                              {article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') 
+                                ? article.excerpt 
+                                : '查看文章详情'}
                             </p>
                             <div className="flex items-center text-xs text-muted-foreground space-x-4">
                               <span className="flex items-center">

@@ -205,7 +205,7 @@ const Article = () => {
                 {article.title}
               </h1>
               
-              {article.excerpt && (
+              {article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') && (
                 <p className="text-xl text-muted-foreground leading-relaxed">
                   {article.excerpt}
                 </p>

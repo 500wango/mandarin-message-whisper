@@ -85,7 +85,7 @@ const News = () => {
   // 只保留搜索功能，不需要分类筛选，因为只显示AI新闻
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (article.excerpt && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
 
@@ -161,7 +161,7 @@ const News = () => {
                 <NewsCard 
                   id={article.id}
                   title={article.title}
-                  excerpt={article.excerpt || ''}
+                  excerpt={article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') ? article.excerpt : '阅读这篇精彩的新闻'}
                   category={article.category?.name || '未分类'}
                   publishDate={formatDate(article.published_at)}
                   readTime={calculateReadTime(article.excerpt || '')}

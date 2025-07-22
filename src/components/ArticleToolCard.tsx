@@ -59,7 +59,9 @@ export const ArticleToolCard = ({
             {title}
           </h3>
           <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
-            {excerpt}
+            {excerpt && !excerpt.includes('json') && !excerpt.includes('"title"') 
+              ? excerpt 
+              : '探索这个优质的内容'}
           </p>
         </CardContent>
         

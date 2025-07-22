@@ -76,7 +76,7 @@ const Prompts = () => {
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (article.excerpt && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
 
@@ -149,7 +149,7 @@ const Prompts = () => {
                 <NewsCard 
                   id={article.id}
                   title={article.title}
-                  excerpt={article.excerpt || ''}
+                  excerpt={article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') ? article.excerpt : '探索这个实用的提示词'}
                   category={article.category?.name || '未分类'}
                   publishDate={formatDate(article.published_at)}
                   readTime={calculateReadTime(article.excerpt || '')}

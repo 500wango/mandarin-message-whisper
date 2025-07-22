@@ -78,7 +78,7 @@ const Tools = () => {
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (article.excerpt && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
 
@@ -151,7 +151,7 @@ const Tools = () => {
                 <ToolCard 
                   id={article.id}
                   title={article.title}
-                  excerpt={article.excerpt || '探索这个强大的AI工具，提升您的工作效率'}
+                  excerpt={article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') ? article.excerpt : '探索这个强大的AI工具，提升您的工作效率'}
                   imageUrl={article.featured_image_url || 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=200&fit=crop'}
                   slug={article.slug}
                   category={article.category?.name || 'AI工具'}

@@ -69,7 +69,9 @@ export const NewsCard = ({
           </h3>
           
           <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
-            {excerpt}
+            {excerpt && !excerpt.includes('json') && !excerpt.includes('"title"') 
+              ? excerpt 
+              : '阅读这篇精彩的文章'}
           </p>
 
           {/* Meta Info */}

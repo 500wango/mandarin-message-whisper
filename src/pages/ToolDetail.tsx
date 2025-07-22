@@ -470,51 +470,101 @@ const ToolDetail = () => {
                 </div>
               </div>
 
-              {/* 工具亮点 */}
+              {/* 工具亮点 - 动态特性展示 */}
               <div className="mb-10">
                 <h3 className="text-xl font-bold mb-6 text-foreground border-b border-border pb-2">
                   Why Choose This Tool:
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-5 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white text-lg">⚡</span>
+                  {(() => {
+                    // 根据工具标题和分类动态生成特性
+                    const title = article.title.toLowerCase();
+                    const category = article.category?.name?.toLowerCase() || '';
+                    const features = [];
+                    
+                    // 基于工具名称和类别智能生成特性
+                    if (title.includes('claude') || title.includes('gpt') || title.includes('chat')) {
+                      features.push({
+                        icon: '🧠',
+                        title: '智能对话',
+                        description: '强大的自然语言理解和生成能力，提供人性化的交互体验',
+                        color: 'blue'
+                      });
+                    } else if (title.includes('image') || title.includes('图像') || title.includes('picture')) {
+                      features.push({
+                        icon: '🎨',
+                        title: '图像处理',
+                        description: '先进的图像生成和编辑技术，创造无限视觉可能',
+                        color: 'purple'
+                      });
+                    } else if (title.includes('code') || title.includes('编程') || title.includes('dev')) {
+                      features.push({
+                        icon: '💻',
+                        title: '代码智能',
+                        description: '智能代码生成和优化，大幅提升开发效率',
+                        color: 'green'
+                      });
+                    } else {
+                      features.push({
+                        icon: '⚡',
+                        title: '高效便捷',
+                        description: '简单易用的界面设计，快速上手无需学习成本',
+                        color: 'blue'
+                      });
+                    }
+                    
+                    // 根据类别添加特性
+                    if (category.includes('design') || category.includes('设计')) {
+                      features.push({
+                        icon: '🎯',
+                        title: '设计精美',
+                        description: '专业级设计工具，打造视觉震撼的创作体验',
+                        color: 'green'
+                      });
+                    } else if (category.includes('productivity') || category.includes('生产力')) {
+                      features.push({
+                        icon: '📈',
+                        title: '效率提升',
+                        description: '自动化工作流程，显著提高日常工作效率',
+                        color: 'green'
+                      });
+                    } else {
+                      features.push({
+                        icon: '🎯',
+                        title: '精准智能',
+                        description: '基于最新AI技术驱动，提供准确可靠的结果',
+                        color: 'green'
+                      });
+                    }
+                    
+                    // 添加通用特性
+                    features.push({
+                      icon: '🔧',
+                      title: '功能全面',
+                      description: `满足${article.title}使用场景的多样化需求，一站式解决方案`,
+                      color: 'purple'
+                    });
+                    
+                    features.push({
+                      icon: '📱',
+                      title: '多端支持',
+                      description: '支持多设备访问使用，随时随地享受AI助力',
+                      color: 'orange'
+                    });
+                    
+                    // 渲染特性卡片
+                    return features.map((feature, index) => (
+                      <div key={index} className={`bg-gradient-to-br from-${feature.color}-50 to-${feature.color}-100 dark:from-${feature.color}-950 dark:to-${feature.color}-900 p-5 rounded-xl border border-${feature.color}-200 dark:border-${feature.color}-800`}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-10 h-10 bg-${feature.color}-500 rounded-lg flex items-center justify-center`}>
+                            <span className="text-white text-lg">{feature.icon}</span>
+                          </div>
+                          <h4 className={`font-semibold text-${feature.color}-900 dark:text-${feature.color}-100`}>{feature.title}</h4>
+                        </div>
+                        <p className={`text-sm text-${feature.color}-800 dark:text-${feature.color}-200`}>{feature.description}</p>
                       </div>
-                      <h4 className="font-semibold text-blue-900 dark:text-blue-100">高效便捷</h4>
-                    </div>
-                    <p className="text-sm text-blue-800 dark:text-blue-200">简单易用的界面设计，快速上手无需学习成本</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-5 rounded-xl border border-green-200 dark:border-green-800">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white text-lg">🎯</span>
-                      </div>
-                      <h4 className="font-semibold text-green-900 dark:text-green-100">精准智能</h4>
-                    </div>
-                    <p className="text-sm text-green-800 dark:text-green-200">基于最新AI技术驱动，提供准确可靠的结果</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 p-5 rounded-xl border border-purple-200 dark:border-purple-800">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white text-lg">🔧</span>
-                      </div>
-                      <h4 className="font-semibold text-purple-900 dark:text-purple-100">功能丰富</h4>
-                    </div>
-                    <p className="text-sm text-purple-800 dark:text-purple-200">满足多种使用场景需求，一站式解决方案</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 p-5 rounded-xl border border-orange-200 dark:border-orange-800">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white text-lg">📱</span>
-                      </div>
-                      <h4 className="font-semibold text-orange-900 dark:text-orange-100">跨平台支持</h4>
-                    </div>
-                    <p className="text-sm text-orange-800 dark:text-orange-200">支持多设备访问使用，随时随地提升效率</p>
-                  </div>
+                    ));
+                  })()}
                 </div>
               </div>
 

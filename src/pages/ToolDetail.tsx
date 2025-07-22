@@ -353,67 +353,173 @@ const ToolDetail = () => {
                            content = `__VISIT_TOOL__${toolLink}__END__\n\n${content}`;
                          }
                         
-                        // 如果清理后内容太短或为空，生成基于标题的动态内容
-                        if (!content || content.length < 50) {
-                          const toolName = article.title || 'AI工具';
-                          return (
-                            <div className="space-y-6">
-                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
-                                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">🚀 关于 {toolName}</h4>
-                                <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
-                                  {toolName} 是一款功能强大的AI工具，专为提升工作效率和创造力而设计。
-                                  通过集成最新的人工智能技术，为用户提供智能化的解决方案。
-                                </p>
-                              </div>
-                              
-                              <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                  <h4 className="font-semibold text-foreground">✨ 主要特点</h4>
-                                  <ul className="space-y-2 text-muted-foreground">
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>先进的AI技术驱动</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>直观易用的用户界面</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>高效的处理能力</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>多场景应用支持</span>
-                                    </li>
-                                  </ul>
-                                </div>
-                                
-                                <div className="space-y-4">
-                                  <h4 className="font-semibold text-foreground">🎯 使用场景</h4>
-                                  <ul className="space-y-2 text-muted-foreground">
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>日常工作自动化</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>创意内容生成</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>数据分析处理</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                      <span className="text-primary">•</span>
-                                      <span>团队协作提效</span>
-                                    </li>
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
+                         // 如果清理后内容太短或为空，根据工具类别和名称生成针对性内容
+                         if (!content || content.length < 50) {
+                           const toolName = article.title || 'AI工具';
+                           const categoryName = article.category?.name || '';
+                           
+                           // 根据不同类别生成不同的特点描述
+                           const generateFeaturesByCategory = () => {
+                             const toolNameLower = toolName.toLowerCase();
+                             const categoryLower = categoryName.toLowerCase();
+                             
+                             // 视频类工具
+                             if (toolNameLower.includes('video') || toolNameLower.includes('视频') || 
+                                 categoryLower.includes('video') || categoryLower.includes('视频')) {
+                               return {
+                                 description: `${toolName} 是一款专业的AI视频制作工具，利用先进的人工智能技术，让视频创作变得简单高效。`,
+                                 features: [
+                                   '智能视频生成技术',
+                                   '丰富的模板素材库', 
+                                   '自动剪辑优化功能',
+                                   '高质量输出效果'
+                                 ],
+                                 scenarios: [
+                                   '营销宣传视频制作',
+                                   '教育培训内容',
+                                   '社交媒体短视频',
+                                   '企业品牌推广'
+                                 ]
+                               };
+                             }
+                             
+                             // 文字/写作类工具
+                             if (toolNameLower.includes('write') || toolNameLower.includes('text') || toolNameLower.includes('写作') ||
+                                 categoryLower.includes('写作') || categoryLower.includes('文本')) {
+                               return {
+                                 description: `${toolName} 是一款智能写作助手，运用先进的自然语言处理技术，帮助用户快速生成高质量文本内容。`,
+                                 features: [
+                                   '智能内容生成',
+                                   '多风格写作支持',
+                                   '实时语法检查',
+                                   '创意灵感启发'
+                                 ],
+                                 scenarios: [
+                                   '文章博客创作',
+                                   '营销文案撰写',
+                                   '学术论文辅助',
+                                   '创意故事编写'
+                                 ]
+                               };
+                             }
+                             
+                             // 图像/设计类工具
+                             if (toolNameLower.includes('image') || toolNameLower.includes('design') || toolNameLower.includes('图像') ||
+                                 categoryLower.includes('设计') || categoryLower.includes('图像')) {
+                               return {
+                                 description: `${toolName} 是一款创新的AI图像设计工具，结合深度学习算法，为用户提供专业级的视觉创作体验。`,
+                                 features: [
+                                   'AI智能生成图像',
+                                   '多样化设计风格',
+                                   '高精度图像处理',
+                                   '批量编辑功能'
+                                 ],
+                                 scenarios: [
+                                   '品牌视觉设计',
+                                   '社交媒体配图',
+                                   '电商产品图片',
+                                   '艺术创作探索'
+                                 ]
+                               };
+                             }
+                             
+                             // 音频类工具
+                             if (toolNameLower.includes('audio') || toolNameLower.includes('voice') || toolNameLower.includes('音频') ||
+                                 categoryLower.includes('音频') || categoryLower.includes('语音')) {
+                               return {
+                                 description: `${toolName} 是一款先进的AI音频处理工具，运用机器学习技术提供专业的音频编辑和生成服务。`,
+                                 features: [
+                                   'AI语音合成技术',
+                                   '智能降噪处理',
+                                   '多语言支持',
+                                   '音质优化算法'
+                                 ],
+                                 scenarios: [
+                                   '播客内容制作',
+                                   '有声读物录制',
+                                   '多媒体配音',
+                                   '语音助手开发'
+                                 ]
+                               };
+                             }
+                             
+                             // 代码/开发类工具
+                             if (toolNameLower.includes('code') || toolNameLower.includes('dev') || toolNameLower.includes('代码') ||
+                                 categoryLower.includes('开发') || categoryLower.includes('编程')) {
+                               return {
+                                 description: `${toolName} 是一款智能编程助手，利用AI技术帮助开发者提高编码效率和代码质量。`,
+                                 features: [
+                                   'AI代码生成',
+                                   '智能错误检测',
+                                   '代码优化建议',
+                                   '多语言支持'
+                                 ],
+                                 scenarios: [
+                                   '快速原型开发',
+                                   '代码审查优化',
+                                   '学习编程辅助',
+                                   '项目架构设计'
+                                 ]
+                               };
+                             }
+                             
+                             // 默认通用描述
+                             return {
+                               description: `${toolName} 是一款创新的AI工具，专注于为用户提供智能化的解决方案，提升工作效率和创造力。`,
+                               features: [
+                                 '智能AI技术驱动',
+                                 '用户友好的界面',
+                                 '高效处理能力',
+                                 '灵活应用场景'
+                               ],
+                               scenarios: [
+                                 '提升工作效率',
+                                 '优化工作流程',
+                                 '创新解决方案',
+                                 '智能化处理'
+                               ]
+                             };
+                           };
+                           
+                           const toolInfo = generateFeaturesByCategory();
+                           
+                           return (
+                             <div className="space-y-6">
+                               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">🚀 关于 {toolName}</h4>
+                                 <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
+                                   {toolInfo.description}
+                                 </p>
+                               </div>
+                               
+                               <div className="grid md:grid-cols-2 gap-6">
+                                 <div className="space-y-4">
+                                   <h4 className="font-semibold text-foreground">✨ 主要特点</h4>
+                                   <ul className="space-y-2 text-muted-foreground">
+                                     {toolInfo.features.map((feature, index) => (
+                                       <li key={index} className="flex items-start gap-2">
+                                         <span className="text-primary">•</span>
+                                         <span>{feature}</span>
+                                       </li>
+                                     ))}
+                                   </ul>
+                                 </div>
+                                 
+                                 <div className="space-y-4">
+                                   <h4 className="font-semibold text-foreground">🎯 使用场景</h4>
+                                   <ul className="space-y-2 text-muted-foreground">
+                                     {toolInfo.scenarios.map((scenario, index) => (
+                                       <li key={index} className="flex items-start gap-2">
+                                         <span className="text-primary">•</span>
+                                         <span>{scenario}</span>
+                                       </li>
+                                     ))}
+                                   </ul>
+                                 </div>
+                               </div>
+                             </div>
+                           );
+                         }
                         
                         // 如果有有效内容，智能分段展示
                         const paragraphs = content.split('\n\n').filter(p => p.trim());

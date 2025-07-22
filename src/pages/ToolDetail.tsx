@@ -271,80 +271,116 @@ const ToolDetail = () => {
                     </div>
                   )}
                   
-                  {/* 永远显示美化的固定内容，不使用数据库的content字段 */}
+                  {/* 动态显示清理后的内容 */}
                   <div className="prose prose-lg max-w-none">
                     <div className="text-muted-foreground leading-8 space-y-6">
-                      <div className="space-y-6">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
-                          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">🚀 产品概述</h4>
-                          <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
-                            这是一款集成于Notion工作空间的AI写作助手，专为内容创作、编辑与头脑风暴而设计。
-                            通过先进的人工智能技术，它能够帮助用户快速生成高质量的文本内容，提升工作效率。
-                          </p>
-                        </div>
+                      {(() => {
+                        let content = article.content || '';
                         
-                        <div className="grid md:grid-cols-2 gap-6">
+                        // 智能清理内容
+                        content = content
+                          // 移除JSON代码块
+                          .replace(/```json[\s\S]*?```/g, '')
+                          .replace(/json\s*\{[\s\S]*?\}/g, '')
+                          // 移除技术标记
+                          .replace(/#{1,6}\s*/g, '')
+                          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除markdown链接但保留文本
+                          .replace(/https?:\/\/[^\s\)]+/g, '') // 移除URL
+                          // 格式化markdown
+                          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                          // 处理特殊符号
+                          .replace(/[🚀⚡🎯📱💡🔧]/g, '')
+                          // 清理多余空行
+                          .replace(/\n\s*\n\s*\n/g, '\n\n')
+                          .trim();
+                        
+                        // 如果清理后内容太短或为空，生成基于标题的动态内容
+                        if (!content || content.length < 50) {
+                          const toolName = article.title || 'AI工具';
+                          return (
+                            <div className="space-y-6">
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">🚀 关于 {toolName}</h4>
+                                <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
+                                  {toolName} 是一款功能强大的AI工具，专为提升工作效率和创造力而设计。
+                                  通过集成最新的人工智能技术，为用户提供智能化的解决方案。
+                                </p>
+                              </div>
+                              
+                              <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold text-foreground">✨ 主要特点</h4>
+                                  <ul className="space-y-2 text-muted-foreground">
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>先进的AI技术驱动</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>直观易用的用户界面</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>高效的处理能力</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>多场景应用支持</span>
+                                    </li>
+                                  </ul>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold text-foreground">🎯 使用场景</h4>
+                                  <ul className="space-y-2 text-muted-foreground">
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>日常工作自动化</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>创意内容生成</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>数据分析处理</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>团队协作提效</span>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // 如果有有效内容，智能分段展示
+                        const paragraphs = content.split('\n\n').filter(p => p.trim());
+                        
+                        return (
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-foreground">✨ 核心功能</h4>
-                            <ul className="space-y-2 text-muted-foreground">
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>智能文本生成与续写</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>多语言内容翻译</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>内容结构化整理</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>创意头脑风暴辅助</span>
-                              </li>
-                            </ul>
+                            {paragraphs.map((paragraph, index) => {
+                              // 检查是否为标题格式
+                              if (paragraph.includes(':') && paragraph.length < 100) {
+                                return (
+                                  <h4 key={index} className="text-lg font-semibold text-foreground mt-6 mb-3">
+                                    {paragraph}
+                                  </h4>
+                                );
+                              }
+                              
+                              // 普通段落
+                              return (
+                                <p key={index} className="leading-relaxed" 
+                                   dangerouslySetInnerHTML={{ __html: paragraph }} />
+                              );
+                            })}
                           </div>
-                          
-                          <div className="space-y-4">
-                            <h4 className="font-semibold text-foreground">🎯 适用场景</h4>
-                            <ul className="space-y-2 text-muted-foreground">
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>文章撰写与编辑</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>会议纪要整理</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>项目文档制作</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>学习笔记总结</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                        
-                        <div className="bg-green-50 dark:bg-green-950 p-6 rounded-xl border border-green-200 dark:border-green-800">
-                          <h4 className="font-semibold text-green-900 dark:text-green-100 mb-3">💡 使用优势</h4>
-                          <p className="text-green-800 dark:text-green-200 leading-relaxed">
-                            与Notion完美集成，无需切换平台即可享受AI写作服务。支持实时协作，
-                            团队成员可以共同使用AI功能进行内容创作，大幅提升团队协作效率。
-                          </p>
-                        </div>
-                        
-                        <div className="bg-purple-50 dark:bg-purple-950 p-6 rounded-xl border border-purple-200 dark:border-purple-800">
-                          <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-3">⚡ 技术特色</h4>
-                          <p className="text-purple-800 dark:text-purple-200 leading-relaxed">
-                            基于最新的大语言模型技术，具备强大的文本理解和生成能力。支持上下文感知，
-                            能够根据您的写作风格和需求，生成个性化的内容建议。
-                          </p>
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

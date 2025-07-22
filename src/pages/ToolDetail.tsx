@@ -264,35 +264,113 @@ const ToolDetail = () => {
                   )}
                   
                   <div className="prose prose-lg max-w-none">
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: article.content }}
-                      className="text-muted-foreground leading-8 space-y-6 [&>p]:mb-4 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-foreground [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-lg [&>h3]:font-medium [&>h3]:text-foreground [&>h3]:mt-4 [&>h3]:mb-2 [&>ul]:space-y-2 [&>ol]:space-y-2 [&>li]:ml-4 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:bg-muted/20 [&>blockquote]:py-2 [&>code]:bg-muted [&>code]:px-2 [&>code]:py-1 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-muted [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>strong]:font-semibold [&>strong]:text-foreground [&>em]:italic"
-                    />
+                    <div className="text-muted-foreground leading-8 space-y-6">
+                      {(() => {
+                        // 清理和格式化内容
+                        let cleanContent = article.content || '';
+                        
+                        // 移除JSON格式的内容
+                        cleanContent = cleanContent.replace(/```json\s*{[^}]*}\s*```/g, '');
+                        cleanContent = cleanContent.replace(/json\s*{\s*"[^"]*":\s*"[^"]*"[^}]*}/g, '');
+                        
+                        // 移除技术标记和URL
+                        cleanContent = cleanContent.replace(/https?:\/\/[^\s)]+/g, '');
+                        cleanContent = cleanContent.replace(/##+\s*/g, '');
+                        cleanContent = cleanContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                        cleanContent = cleanContent.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                        
+                        // 处理表情符号和特殊符号
+                        cleanContent = cleanContent.replace(/🚀|⚡|🎯|📱|💡/g, '');
+                        
+                        // 移除多余的空行和空格
+                        cleanContent = cleanContent.replace(/\n\s*\n\s*\n/g, '\n\n');
+                        cleanContent = cleanContent.trim();
+                        
+                        // 如果清理后没有内容，使用默认描述
+                        if (!cleanContent || cleanContent.length < 20) {
+                          return (
+                            <div className="space-y-4">
+                              <p>这是一个功能强大的AI工具，专为提升工作效率而设计。</p>
+                              <p>通过先进的人工智能技术，它能够帮助用户完成各种复杂任务，简化工作流程，提高生产力。</p>
+                              <p>无论您是专业人士还是普通用户，都能从这个工具中获得价值。</p>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: cleanContent }}
+                            className="[&>p]:mb-4 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-foreground [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-lg [&>h3]:font-medium [&>h3]:text-foreground [&>h3]:mt-4 [&>h3]:mb-2 [&>ul]:space-y-2 [&>ol]:space-y-2 [&>li]:ml-4 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:bg-muted/20 [&>blockquote]:py-2 [&>code]:bg-muted [&>code]:px-2 [&>code]:py-1 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-muted [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>strong]:font-semibold [&>strong]:text-foreground [&>em]:italic"
+                          />
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* 功能特性 */}
+              {/* 工具亮点 */}
               <div className="mb-10">
-                <h3 className="text-xl font-bold mb-4 text-foreground border-b border-border pb-2">
-                  Key Features:
+                <h3 className="text-xl font-bold mb-6 text-foreground border-b border-border pb-2">
+                  Why Choose This Tool:
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-sm font-medium">AI驱动技术</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-5 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-lg">⚡</span>
+                      </div>
+                      <h4 className="font-semibold text-blue-900 dark:text-blue-100">高效便捷</h4>
+                    </div>
+                    <p className="text-sm text-blue-800 dark:text-blue-200">简单易用的界面设计，快速上手无需学习成本</p>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-sm font-medium">高效自动化</span>
+                  
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-5 rounded-xl border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-lg">🎯</span>
+                      </div>
+                      <h4 className="font-semibold text-green-900 dark:text-green-100">精准智能</h4>
+                    </div>
+                    <p className="text-sm text-green-800 dark:text-green-200">基于最新AI技术驱动，提供准确可靠的结果</p>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-sm font-medium">易于使用</span>
+                  
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 p-5 rounded-xl border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-lg">🔧</span>
+                      </div>
+                      <h4 className="font-semibold text-purple-900 dark:text-purple-100">功能丰富</h4>
+                    </div>
+                    <p className="text-sm text-purple-800 dark:text-purple-200">满足多种使用场景需求，一站式解决方案</p>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-sm font-medium">多平台支持</span>
+                  
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 p-5 rounded-xl border border-orange-200 dark:border-orange-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-lg">📱</span>
+                      </div>
+                      <h4 className="font-semibold text-orange-900 dark:text-orange-100">跨平台支持</h4>
+                    </div>
+                    <p className="text-sm text-orange-800 dark:text-orange-200">支持多设备访问使用，随时随地提升效率</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 使用提示 */}
+              <div className="mb-10">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-xl border-l-4 border-primary">
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                      <span className="text-primary text-lg">💡</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-2">使用提示</h4>
+                      <p className="text-muted-foreground leading-relaxed">
+                        点击右侧的访问按钮即可直接跳转到工具官网，开始体验强大的AI功能。
+                        建议首次使用时先了解基本功能，再根据需求探索高级特性。
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -301,17 +379,17 @@ const ToolDetail = () => {
               <div className="mb-8">
                 <h3 className="text-lg font-semibold mb-4 text-foreground">Tags:</h3>
                 <div className="flex flex-wrap gap-3">
-                  <Badge variant="outline" className="px-3 py-1 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10">
+                  <Badge variant="outline" className="px-4 py-2 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 transition-colors">
                     AI工具
                   </Badge>
-                  <Badge variant="outline" className="px-3 py-1 bg-blue-500/5 border-blue-500/20 text-blue-600 hover:bg-blue-500/10">
+                  <Badge variant="outline" className="px-4 py-2 bg-blue-500/5 border-blue-500/20 text-blue-600 hover:bg-blue-500/10 transition-colors">
                     生产力
                   </Badge>
-                  <Badge variant="outline" className="px-3 py-1 bg-green-500/5 border-green-500/20 text-green-600 hover:bg-green-500/10">
+                  <Badge variant="outline" className="px-4 py-2 bg-green-500/5 border-green-500/20 text-green-600 hover:bg-green-500/10 transition-colors">
                     自动化
                   </Badge>
-                  <Badge variant="outline" className="px-3 py-1 bg-purple-500/5 border-purple-500/20 text-purple-600 hover:bg-purple-500/10">
-                    创新
+                  <Badge variant="outline" className="px-4 py-2 bg-purple-500/5 border-purple-500/20 text-purple-600 hover:bg-purple-500/10 transition-colors">
+                    创新科技
                   </Badge>
                 </div>
               </div>

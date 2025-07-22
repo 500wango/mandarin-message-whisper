@@ -67,8 +67,16 @@ const ToolDetail = () => {
         .maybeSingle();
 
       if (articleData) {
+        // 清理数据中的JSON代码
+        const cleanTitle = articleData.title || 'AI工具';
+        const cleanExcerpt = articleData.excerpt && !articleData.excerpt.includes('json') && !articleData.excerpt.includes('"title"') 
+          ? articleData.excerpt 
+          : '';
+        
         const formattedArticle = {
           ...articleData,
+          title: cleanTitle,
+          excerpt: cleanExcerpt,
           category: articleData.categories
         };
         setArticle(formattedArticle);
@@ -255,7 +263,7 @@ const ToolDetail = () => {
                 </div>
                 
                 <div className="space-y-6">
-                  {article.excerpt && (
+                  {article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') && (
                     <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
                       <p className="text-lg leading-relaxed text-foreground font-medium">
                         {article.excerpt}
@@ -497,7 +505,9 @@ const ToolDetail = () => {
                                   {tool.title}
                                 </h4>
                                 <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                  {tool.excerpt}
+                                  {tool.excerpt && !tool.excerpt.includes('json') && !tool.excerpt.includes('"title"') 
+                                    ? tool.excerpt 
+                                    : '发现这个强大的AI工具'}
                                 </p>
                               </div>
                               <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />

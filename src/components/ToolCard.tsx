@@ -93,7 +93,9 @@ export const ToolCard = ({
             {title}
           </h3>
           <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed mb-4">
-            {excerpt}
+            {excerpt && !excerpt.includes('json') && !excerpt.includes('"title"') 
+              ? excerpt 
+              : '探索这个强大的AI工具，提升您的工作效率'}
           </p>
           
           {/* 评分和用户数 */}

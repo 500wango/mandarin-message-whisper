@@ -296,7 +296,7 @@ const ToolDetail = () => {
                       {(() => {
                         let content = article.content || '';
                         
-                         // 智能处理内容，先尝试解析JSON
+                         // 智能处理内容，先尝试解析JSON并提取工具链接
                          const parseContentJSON = () => {
                            // 检查content中的JSON代码块
                            const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
@@ -316,31 +316,42 @@ const ToolDetail = () => {
                          
                          parseContentJSON();
                          
+                         // 提取工具访问链接
+                         let toolLink = '';
+                         const linkMatch = content.match(/\[([^\]]*(?:立即使用|Visit)[^\]]*)\]\(([^)]+)\)/);
+                         if (linkMatch) {
+                           toolLink = linkMatch[2]; // 提取URL
+                         }
+                         
                          // 清理其他格式
                          content = content
                            // 移除重复的标题（如果与页面标题相同）
-                           .replace(new RegExp(`^${article.title}\\s*\\n`, 'gm'), '')
-                           .replace(new RegExp(`^!${article.title}\\s*\\n`, 'gm'), '')
-                           // 移除markdown标题标记
+                           .replace(new RegExp(`^#\\s*${article.title}\\s*\\n`, 'gm'), '')
+                           .replace(new RegExp(`^!\\[${article.title}\\].*\\n`, 'gm'), '')
+                           // 移除markdown标题标记和常见标题
                            .replace(/^#{1,6}\s+(.+)$/gm, '') 
-                           // 移除常见的标题文本
                            .replace(/^(工具介绍|访问工具|工具特点|使用提示)[\s\n]*/gm, '')
-                           // 处理链接 - 保留markdown链接格式但提取URL
-                           .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
-                             // 如果是工具访问链接，转换为特殊标记
-                             if (text.includes('立即使用') || text.includes('Visit') || url.includes('http')) {
-                               return `__TOOL_LINK__${text}__URL__${url}__END__`;
-                             }
-                             return text; // 其他链接只保留文本
-                           })
+                           // 移除所有markdown链接
+                           .replace(/\[([^\]]+)\]\([^)]+\)/g, '')
+                           // 移除图片
+                           .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
                            // 移除URL
                            .replace(/https?:\/\/[^\s\)]+/g, '')
+                           // 移除emoji和特殊符号行
+                           .replace(/^[-\s]*[🚀⚡🎯📱💡🔧]\s*\*\*[^*]+\*\*.*$/gm, '')
+                           // 移除分隔线
+                           .replace(/^---+$/gm, '')
                            // 格式化markdown
                            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
                            .replace(/\*([^*]+)\*/g, '<em>$1</em>')
                            // 清理多余空行
                            .replace(/\n\s*\n\s*\n/g, '\n\n')
                            .trim();
+                         
+                         // 如果提取到了工具链接，在内容开头添加
+                         if (toolLink) {
+                           content = `__VISIT_TOOL__${toolLink}__END__\n\n${content}`;
+                         }
                         
                         // 如果清理后内容太短或为空，生成基于标题的动态内容
                         if (!content || content.length < 50) {
@@ -410,11 +421,11 @@ const ToolDetail = () => {
                         return (
                            <div className="space-y-4">
                              {paragraphs.map((paragraph, index) => {
-                               // 处理工具链接
-                               if (paragraph.includes('__TOOL_LINK__')) {
-                                 const linkMatch = paragraph.match(/__TOOL_LINK__(.+?)__URL__(.+?)__END__/);
+                               // 处理工具访问链接
+                               if (paragraph.includes('__VISIT_TOOL__')) {
+                                 const linkMatch = paragraph.match(/__VISIT_TOOL__(.+?)__END__/);
                                  if (linkMatch) {
-                                   const [, linkText, url] = linkMatch;
+                                   const url = linkMatch[1];
                                    return (
                                      <div key={index} className="my-6">
                                        <a
@@ -424,33 +435,30 @@ const ToolDetail = () => {
                                          className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
                                        >
                                          <ExternalLink className="h-4 w-4" />
-                                         {linkText}
+                                         立即体验 {article.title}
                                        </a>
                                      </div>
                                    );
                                  }
                                }
                                
-                               // 跳过空段落或只包含标题的段落
+                               // 跳过空段落、特殊标记和不需要的内容
                                if (!paragraph.trim() || 
+                                   paragraph.includes('__') ||
                                    paragraph.includes('工具介绍') || 
                                    paragraph.includes('访问工具') || 
                                    paragraph.includes('工具特点') ||
-                                   paragraph === article.title) {
+                                   paragraph.includes('使用提示') ||
+                                   paragraph === article.title ||
+                                   paragraph.startsWith('!') ||
+                                   paragraph.includes('```') ||
+                                   paragraph.match(/^[-\s]*[🚀⚡🎯📱💡🔧]/)) {
                                  return null;
-                               }
-                               
-                               // 检查是否为标题格式
-                               if (paragraph.includes(':') && paragraph.length < 100) {
-                                 return (
-                                   <h4 key={index} className="text-lg font-semibold text-foreground mt-6 mb-3"
-                                       dangerouslySetInnerHTML={{ __html: paragraph }} />
-                                 );
                                }
                                
                                // 普通段落
                                return (
-                                 <p key={index} className="leading-relaxed" 
+                                 <p key={index} className="leading-relaxed text-muted-foreground" 
                                     dangerouslySetInnerHTML={{ __html: paragraph }} />
                                );
                              })}

@@ -59,9 +59,29 @@ export const ArticleToolCard = ({
             {title}
           </h3>
           <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
-            {excerpt && !excerpt.includes('json') && !excerpt.includes('"title"') 
-              ? excerpt 
-              : '探索这个优质的内容'}
+            {(() => {
+              if (!excerpt) return '探索这个优质的内容';
+              
+              // 检查是否为JSON格式
+              if (excerpt.trim().startsWith('```json') || excerpt.trim().startsWith('{')) {
+                try {
+                  // 处理markdown代码块
+                  let jsonStr = excerpt.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim();
+                  
+                  // 如果以{开头，尝试直接解析
+                  if (jsonStr.startsWith('{')) {
+                    const parsed = JSON.parse(jsonStr);
+                    return parsed.description || parsed.title || '探索这个优质的内容';
+                  }
+                  
+                  return '探索这个优质的内容';
+                } catch (error) {
+                  return '探索这个优质的内容';
+                }
+              }
+              
+              return excerpt;
+            })()}
           </p>
         </CardContent>
         

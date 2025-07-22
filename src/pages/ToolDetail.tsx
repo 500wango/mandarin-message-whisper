@@ -67,16 +67,35 @@ const ToolDetail = () => {
         .maybeSingle();
 
       if (articleData) {
-        // 清理数据中的JSON代码
-        const cleanTitle = articleData.title || 'AI工具';
-        const cleanExcerpt = articleData.excerpt && !articleData.excerpt.includes('json') && !articleData.excerpt.includes('"title"') 
-          ? articleData.excerpt 
-          : '';
+        // 解析JSON格式的excerpt
+        const parseExcerpt = (excerpt: string) => {
+          if (!excerpt) return '';
+          
+          // 检查是否为JSON格式
+          if (excerpt.trim().startsWith('```json') || excerpt.trim().startsWith('{')) {
+            try {
+              // 处理markdown代码块
+              let jsonStr = excerpt.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim();
+              
+              // 如果以{开头，尝试直接解析
+              if (jsonStr.startsWith('{')) {
+                const parsed = JSON.parse(jsonStr);
+                return parsed.description || '';
+              }
+              
+              return '';
+            } catch (error) {
+              return '';
+            }
+          }
+          
+          return excerpt;
+        };
         
         const formattedArticle = {
           ...articleData,
-          title: cleanTitle,
-          excerpt: cleanExcerpt,
+          title: articleData.title || 'AI工具',
+          excerpt: parseExcerpt(articleData.excerpt),
           category: articleData.categories
         };
         setArticle(formattedArticle);
@@ -263,7 +282,7 @@ const ToolDetail = () => {
                 </div>
                 
                 <div className="space-y-6">
-                  {article.excerpt && !article.excerpt.includes('json') && !article.excerpt.includes('"title"') && (
+                  {article.excerpt && (
                     <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
                       <p className="text-lg leading-relaxed text-foreground font-medium">
                         {article.excerpt}
@@ -277,23 +296,38 @@ const ToolDetail = () => {
                       {(() => {
                         let content = article.content || '';
                         
-                        // 智能清理内容
-                        content = content
-                          // 移除JSON代码块
-                          .replace(/```json[\s\S]*?```/g, '')
-                          .replace(/json\s*\{[\s\S]*?\}/g, '')
-                          // 移除技术标记
-                          .replace(/#{1,6}\s*/g, '')
-                          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除markdown链接但保留文本
-                          .replace(/https?:\/\/[^\s\)]+/g, '') // 移除URL
-                          // 格式化markdown
-                          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-                          // 处理特殊符号
-                          .replace(/[🚀⚡🎯📱💡🔧]/g, '')
-                          // 清理多余空行
-                          .replace(/\n\s*\n\s*\n/g, '\n\n')
-                          .trim();
+                         // 智能处理内容，先尝试解析JSON
+                         const parseContentJSON = () => {
+                           // 检查content中的JSON代码块
+                           const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+                           if (jsonMatch) {
+                             try {
+                               const parsed = JSON.parse(jsonMatch[1]);
+                               if (parsed.description) {
+                                 // 将JSON块替换为解析后的描述
+                                 content = content.replace(/```json[\s\S]*?```/, parsed.description);
+                               }
+                             } catch (error) {
+                               // JSON解析失败，移除JSON块
+                               content = content.replace(/```json[\s\S]*?```/g, '');
+                             }
+                           }
+                         };
+                         
+                         parseContentJSON();
+                         
+                         // 清理其他格式
+                         content = content
+                           // 移除技术标记
+                           .replace(/#{1,6}\s*/g, '')
+                           .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除markdown链接但保留文本
+                           .replace(/https?:\/\/[^\s\)]+/g, '') // 移除URL
+                           // 格式化markdown
+                           .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                           .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                           // 清理多余空行
+                           .replace(/\n\s*\n\s*\n/g, '\n\n')
+                           .trim();
                         
                         // 如果清理后内容太短或为空，生成基于标题的动态内容
                         if (!content || content.length < 50) {

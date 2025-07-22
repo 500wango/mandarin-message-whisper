@@ -366,9 +366,8 @@ const ToolDetail = () => {
                               // 检查是否为标题格式
                               if (paragraph.includes(':') && paragraph.length < 100) {
                                 return (
-                                  <h4 key={index} className="text-lg font-semibold text-foreground mt-6 mb-3">
-                                    {paragraph}
-                                  </h4>
+                                  <h4 key={index} className="text-lg font-semibold text-foreground mt-6 mb-3"
+                                      dangerouslySetInnerHTML={{ __html: paragraph }} />
                                 );
                               }
                               

@@ -64,7 +64,7 @@ const ToolDetail = () => {
         `)
         .eq('slug', slug)
         .eq('status', 'published')
-        .single();
+        .maybeSingle();
 
       if (articleData) {
         const formattedArticle = {
@@ -197,27 +197,29 @@ const ToolDetail = () => {
             {/* 左侧主要内容 */}
             <div className="lg:col-span-2">
               {/* 工具头部 */}
-              <div className="mb-8">
-                <div className="flex items-start justify-between mb-4">
+              <div className="mb-10">
+                <div className="flex items-start justify-between mb-6">
                   <div className="flex-1">
-                    <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
+                    <h1 className="text-4xl font-bold mb-6 text-foreground leading-tight">
+                      {article.title}
+                    </h1>
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground mb-6">
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50">
                         <Calendar className="h-4 w-4" />
                         <span>{formatDate(article.published_at)}</span>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50">
                         <Eye className="h-4 w-4" />
                         <span>{article.view_count} 次查看</span>
                       </div>
                     </div>
                     {article.category && (
                       <Badge 
-                        className="mb-4"
+                        className="mb-6 px-4 py-2 text-sm font-medium"
                         style={{ 
-                          backgroundColor: `${article.category.color}20`, 
+                          backgroundColor: `${article.category.color}15`, 
                           color: article.category.color,
-                          borderColor: `${article.category.color}40`
+                          borderColor: `${article.category.color}30`
                         }}
                       >
                         {article.category.name}
@@ -227,37 +229,90 @@ const ToolDetail = () => {
                 </div>
 
                 {/* 工具截图/预览图 */}
-                <div className="relative rounded-lg overflow-hidden mb-6">
+                <div className="relative rounded-2xl overflow-hidden mb-8 shadow-lg">
                   <img 
                     src={article.featured_image_url || 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=400&fit=crop'} 
                     alt={article.title}
                     className="w-full h-80 object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                      <p className="text-white text-sm font-medium">
+                        点击右侧按钮体验 {article.title}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* 描述内容 */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Description:</h2>
-                <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
+              <div className="mb-10">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold mb-6 text-foreground border-b border-border pb-3">
+                    Description:
+                  </h2>
+                </div>
+                
+                <div className="space-y-6">
                   {article.excerpt && (
-                    <p className="text-lg mb-6">{article.excerpt}</p>
+                    <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
+                      <p className="text-lg leading-relaxed text-foreground font-medium">
+                        {article.excerpt}
+                      </p>
+                    </div>
                   )}
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: article.content }}
-                    className="space-y-4"
-                  />
+                  
+                  <div className="prose prose-lg max-w-none">
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: article.content }}
+                      className="text-muted-foreground leading-8 space-y-6 [&>p]:mb-4 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-foreground [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-lg [&>h3]:font-medium [&>h3]:text-foreground [&>h3]:mt-4 [&>h3]:mb-2 [&>ul]:space-y-2 [&>ol]:space-y-2 [&>li]:ml-4 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:bg-muted/20 [&>blockquote]:py-2 [&>code]:bg-muted [&>code]:px-2 [&>code]:py-1 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-muted [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>strong]:font-semibold [&>strong]:text-foreground [&>em]:italic"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 功能特性 */}
+              <div className="mb-10">
+                <h3 className="text-xl font-bold mb-4 text-foreground border-b border-border pb-2">
+                  Key Features:
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="text-sm font-medium">AI驱动技术</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="text-sm font-medium">高效自动化</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="text-sm font-medium">易于使用</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border border-border/30">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="text-sm font-medium">多平台支持</span>
+                  </div>
                 </div>
               </div>
 
               {/* 标签 */}
               <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-3">Tags:</h3>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">AI工具</Badge>
-                  <Badge variant="outline">生产力</Badge>
-                  <Badge variant="outline">自动化</Badge>
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Tags:</h3>
+                <div className="flex flex-wrap gap-3">
+                  <Badge variant="outline" className="px-3 py-1 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10">
+                    AI工具
+                  </Badge>
+                  <Badge variant="outline" className="px-3 py-1 bg-blue-500/5 border-blue-500/20 text-blue-600 hover:bg-blue-500/10">
+                    生产力
+                  </Badge>
+                  <Badge variant="outline" className="px-3 py-1 bg-green-500/5 border-green-500/20 text-green-600 hover:bg-green-500/10">
+                    自动化
+                  </Badge>
+                  <Badge variant="outline" className="px-3 py-1 bg-purple-500/5 border-purple-500/20 text-purple-600 hover:bg-purple-500/10">
+                    创新
+                  </Badge>
                 </div>
               </div>
             </div>
